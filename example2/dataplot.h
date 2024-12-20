@@ -49,7 +49,7 @@ public:
     
     multiPlotGnuplot(size_t _length = 20, size_t _dim = 3){
         setLength(_length);
-        g1.set_style("lines");
+        g1.set_plot_style("lines");
         setDim(_dim);
     };
     ~multiPlotGnuplot(){};

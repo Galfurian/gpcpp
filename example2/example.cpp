@@ -83,15 +83,15 @@ int main()
         cout << endl << endl << "*** showing styles" << endl;
 
         cout << "sine in points" << endl;
-        g1.set_pointsize(0.8).set_style("points");
+        g1.set_pointsize(0.8).set_plot_style("points");
         g1.plot_equation("sin(x)","points");
 
         cout << "sine in impulses" << endl;
-        g1.set_style("impulses");
+        g1.set_plot_style("impulses");
         g1.plot_equation("sin(x)","impulses");
 
         cout << "sine in steps" << endl;
-        g1.set_style("steps");
+        g1.set_plot_style("steps");
         g1.plot_equation("sin(x)","steps");
 
         //
@@ -103,7 +103,7 @@ int main()
         cout << "y = sin(x) saved to test_output.ps in working directory" << endl;
 //      g1.savetops("test_output");
         g1.savetofigure("test_output.ps", "postscript color");
-        g1.set_style("lines").set_samples(300).set_xrange(0,5);
+        g1.set_plot_style("lines").set_samples(300).set_xrange(0,5);
         g1.plot_equation("sin(12*x)*exp(-x)").plot_equation("exp(-x)");
 
         g1.showonscreen(); // window output
@@ -133,12 +133,12 @@ int main()
 
         g1.reset_all();
         cout << endl << endl << "*** user-defined lists of doubles" << endl;
-        g1.set_style("impulses").plot_x(y,"user-defined doubles");
+        g1.set_plot_style("impulses").plot_x(y,"user-defined doubles");
 
         g1.reset_plot();
         cout << endl << endl << "*** user-defined lists of points (x,y)" << endl;
         g1.set_grid();
-        g1.set_style("points").plot_xy(x,y,"user-defined points 2d");
+        g1.set_plot_style("points").plot_xy(x,y,"user-defined points 2d");
 
         g1.reset_plot();
         cout << endl << endl << "*** user-defined lists of points (x,y,z)" << endl;
@@ -157,7 +157,7 @@ int main()
         cout << "*** multiple output windows" << endl;
 
         g1.reset_plot();
-        g1.set_style("lines");
+        g1.set_plot_style("lines");
         cout << "window 1: sin(x)" << endl;
         g1.set_grid().set_samples(600).set_xrange(0,300);
         g1.plot_equation("sin(x)+sin(x*1.1)");
@@ -167,8 +167,8 @@ int main()
         Gnuplot g2;
         cout << "window 2: user defined points" << endl;
         g2.plot_x(y2,"points");
-        g2.set_smooth().plot_x(y2,"cspline");
-        g2.set_smooth("bezier").plot_x(y2,"bezier");
+        g2.set_smooth_style().plot_x(y2,"cspline");
+        g2.set_smooth_style("bezier").plot_x(y2,"bezier");
         g2.unset_smooth();
 
         Gnuplot g3("lines");

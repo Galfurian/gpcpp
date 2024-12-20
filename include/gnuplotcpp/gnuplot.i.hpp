@@ -60,204 +60,247 @@ std::string Gnuplot::m_terminal_std = "x11";
 #define FILE_ACCESS(file, mode) access(file, mode)
 #endif
 
-Gnuplot::Gnuplot(plot_style_t style) : gnuplot_pipe(NULL), valid(false), two_dim(false), nplots(0)
+Gnuplot::Gnuplot()
+    : gnuplot_pipe(nullptr),              // No active pipe initially
+      valid(false),                       // Invalid session by default
+      two_dim(true),                      // 2D plotting by default
+      nplots(0),                          // No plots initially
+      line_width(1.0),                    // Default line width
+      plot_style(plot_style_t::lines),    // Default plot style is lines
+      smooth_style(smooth_style_t::none), // No smoothing by default
+      line_style(""),                     // No custom line style
+      line_color(""),                     // Default line color is unspecified
+      point_style(point_style_t::none),   // Default point style is none
+      point_size(-1.0)                    // Default point size is unspecified
 
 {
-    init();
-    set_style(style);
-}
+#if (defined(unix) || defined(__unix) || defined(__unix__)) && !defined(__APPLE__)
+    // Ensure DISPLAY is set for Unix systems.
+    if (!getenv("DISPLAY")) {
+        std::cerr << "Error: DISPLAY variable not set.\n";
+        valid = false;
+        return;
+    }
+#endif
 
-Gnuplot::Gnuplot(const std::vector<double> &x,
-                 const std::string &title,
-                 plot_style_t style,
-                 const std::string &labelx,
-                 const std::string &labely)
-    : gnuplot_pipe(NULL), valid(false), two_dim(false), nplots(0)
-{
-    init();
+    // Check if gnuplot is available.
+    if (!Gnuplot::get_program_path()) {
+        std::cerr << "Error: Gnuplot executable not found.\n";
+        valid = false;
+        return;
+    }
 
-    set_style(style);
-    set_xlabel(labelx);
-    set_ylabel(labely);
+    // Try to open a pipe to Gnuplot.
+    gnuplot_pipe = OPEN_PIPE((Gnuplot::m_gnuplot_path + "/" + Gnuplot::m_gnuplot_filename).c_str(), "w");
+    if (!gnuplot_pipe) {
+        std::cerr << "Error: Unable to open pipe to Gnuplot.\n";
+        valid = false;
+        return;
+    }
 
-    plot_x(x, title);
-}
+    // Initialize plotting state.
+    valid   = true;
+    nplots  = 0;
+    two_dim = false;
 
-Gnuplot::Gnuplot(const std::vector<double> &x,
-                 const std::vector<double> &y,
-                 const std::string &title,
-                 plot_style_t style,
-                 const std::string &labelx,
-                 const std::string &labely)
-    : gnuplot_pipe(NULL), valid(false), two_dim(false), nplots(0)
-{
-    init();
+    // Initialize styles.
+    plot_style   = plot_style_t::none;
+    smooth_style = smooth_style_t::none;
+    line_style.clear();
+    line_color.clear();
+    point_style = point_style_t::plus;
+    point_size  = -1.0;
+    line_width  = -1.0;
 
-    set_style(style);
-    set_xlabel(labelx);
-    set_ylabel(labely);
+    // Initialize contour settings.
+    contour.type  = contour_type_t::none;
+    contour.param = contour_param_t::levels;
+    contour.discrete_levels.clear();
+    contour.increment_start = 0.0;
+    contour.increment_step  = 0.1;
+    contour.increment_end   = 1.0;
+    contour.levels          = 10;
 
-    plot_xy(x, y, title);
-}
+    // Clear temporary file list.
+    tmpfile_list.clear();
 
-Gnuplot::Gnuplot(const std::vector<double> &x,
-                 const std::vector<double> &y,
-                 const std::vector<double> &z,
-                 const std::string &title,
-                 plot_style_t style,
-                 const std::string &labelx,
-                 const std::string &labely,
-                 const std::string &labelz)
-    : gnuplot_pipe(NULL), valid(false), two_dim(false), nplots(0)
-{
-    init();
-
-    set_style(style);
-    set_xlabel(labelx);
-    set_ylabel(labely);
-    set_zlabel(labelz);
-
-    plot_xyz(x, y, z, title);
+    // Set terminal type and initial plot settings.
+    this->showonscreen();
 }
 
 Gnuplot::~Gnuplot()
 {
-    // A stream opened by popen() should be closed by pclose()
-    if (CLOSE_PIPE(gnuplot_pipe) == -1) {
-        std::cerr << "Problem closing communication to gnuplot" << "\n";
+    // Close the communication pipe to Gnuplot if it's open
+    if (gnuplot_pipe) {
+        if (CLOSE_PIPE(gnuplot_pipe) == -1) {
+            std::cerr << "Warning: Problem closing communication to Gnuplot.\n";
+        }
+        // Avoid dangling pointer.
+        gnuplot_pipe = nullptr;
     }
+
+    // Remove all temporary files created during the session
+    remove_tmpfiles();
 }
 
 Gnuplot &Gnuplot::send_cmd(const std::string &cmdstr)
 {
-    if (valid) {
-        // int fputs ( const char * str, FILE * stream );
-        // writes the string str to the stream.
-        // The function begins copying from the address specified (str) until it
-        // reaches the terminating null character ('\0'). This final
-        // null-character is not copied to the stream.
-        fprintf(gnuplot_pipe, "%s\n", cmdstr.c_str());
-        // int fflush ( FILE * stream );
-        // If the given stream was open for writing and the last i/o operation was
-        // an output operation, any unwritten data in the output buffer is written
-        // to the file.  If the argument is a null pointer, all open files are
-        // flushed.  The stream remains open after this call.
-        fflush(gnuplot_pipe);
-
-        if (cmdstr.find("replot") != std::string::npos) {
-            return *this;
-        } else if (cmdstr.find("splot") != std::string::npos) {
-            two_dim = false;
-            nplots++;
-        } else if (cmdstr.find("plot") != std::string::npos) {
-            two_dim = true;
-            nplots++;
-        }
+    // Check if the Gnuplot session is ready.
+    if (!this->is_ready()) {
+        std::cerr << "Error: Invalid Gnuplot session not ready.\n";
+        return *this;
     }
+
+    // Write the command to the Gnuplot pipe.
+    fprintf(gnuplot_pipe, "%s\n", cmdstr.c_str());
+    fflush(gnuplot_pipe);
+
+    // Check and update state based on the command type.
+    if (cmdstr.find("replot") != std::string::npos) {
+        // Do not increment plot count or change dimensionality.
+    }
+    // Command starts with "splot".
+    else if (cmdstr.find("splot") == 0) {
+        two_dim = false;
+        nplots++;
+    }
+    // Command starts with "plot".
+    else if (cmdstr.find("plot") == 0) {
+        two_dim = true;
+        nplots++;
+    }
+
     return *this;
 }
 
 template <typename X>
 Gnuplot &Gnuplot::plot_x(const X &x, const std::string &title)
-{ // Check if the input vector is empty
+{
+    // Check if the Gnuplot session is ready.
+    if (!this->is_ready()) {
+        std::cerr << "Error: Invalid Gnuplot session not ready.\n";
+        return *this;
+    }
+
+    // Check if the input vector is empty.
     if (x.empty()) {
-        throw GnuplotException("Input vector is empty. Cannot plot data.");
+        std::cerr << "Error: Input vector is empty. Cannot plot data." << std::endl;
+        return *this;
     }
 
     // Create a temporary file for storing the data
     std::ofstream file;
-    std::string name;
-    try {
-        name = this->create_tmpfile(file);
-    } catch (const GnuplotException &e) {
-        throw GnuplotException("Failed to create a temporary file: " + std::string(e.what()));
-    }
-
-    // Ensure the temporary file name is valid
+    std::string name = this->create_tmpfile(file);
     if (name.empty()) {
-        throw GnuplotException("Temporary file name is empty. File creation failed.");
+        std::cerr << "Error: Temporary file name is empty. File creation failed." << std::endl;
+        return *this;
     }
 
-    // Write the data to the temporary file.
+    // Write the data to the temporary file
     for (size_t i = 0; i < x.size(); ++i) {
-        // Check if writing succeeded.
         if (!(file << x[i] << '\n')) {
             file.close();
-            throw GnuplotException("Failed to write data to the temporary file: " + name);
+            std::cerr << "Error: Failed to write data to the temporary file: " << name << std::endl;
+            return *this;
         }
     }
 
-    // Ensure the file buffer is flushed and file is closed.
+    // Ensure the file buffer is flushed
     file.flush();
-    if (file.fail()) { // Check for flush failure
+    if (file.fail()) {
         file.close();
-        throw GnuplotException("Failed to flush data to the temporary file: " + name);
+        std::cerr << "Error: Failed to flush data to the temporary file: " << name << std::endl;
+        return *this;
     }
     file.close();
 
-    // Pass the temporary file to Gnuplot for plotting.
-    try {
-        this->plotfile_x(name, 1, title);
-    } catch (const GnuplotException &e) {
-        throw GnuplotException("Failed to plot data from the temporary file: " + std::string(e.what()));
-    }
+    // Pass the temporary file to Gnuplot for plotting
+    this->plotfile_x(name, 1, title);
 
     return *this;
 }
 
 template <typename X>
-Gnuplot &Gnuplot::plot_x(const std::vector<X> &x, const std::vector<std::string> &title)
+Gnuplot &Gnuplot::plot_x(const std::vector<X> &x, const std::vector<std::string> &titles)
 {
-    if (x.size() == 0) // no check
-    {
-        throw GnuplotException("std::vector too small");
+    // Check if the Gnuplot session is ready
+    if (!this->is_ready()) {
+        std::cerr << "Error: Invalid Gnuplot session not ready.\n";
         return *this;
     }
 
-    int column = 1;
-    std::ostringstream oss;
-    //
-    // command to be sent to gnuplot
-    //
-    if (nplots > 0 && two_dim == true)
-        oss << "replot ";
-    else
-        oss << "plot ";
+    // Validate input data
+    if (x.empty()) {
+        std::cerr << "Error: Input data is empty. Cannot plot.\n";
+        return *this;
+    }
 
-    for (unsigned int k = 0; k < x.size(); k++) {
-        oss << "\'-\' using " << column;
-        if (title.size() == 0 || title[k] == "") {
+    if (!titles.empty() && titles.size() != x.size()) {
+        std::cerr << "Error: Mismatch between the number of datasets and titles.\n";
+        return *this;
+    }
+
+    std::ostringstream oss;
+
+    // Determine the command ('plot' or 'replot')
+    oss << ((nplots > 0 && two_dim) ? "replot " : "plot ");
+
+    // Construct the plotting command for each dataset
+    for (size_t k = 0; k < x.size(); ++k) {
+        oss << "'-' using 1"; // Each dataset is sent inline as '-'
+
+        // Add title
+        if (titles.empty() || titles[k].empty()) {
             oss << " notitle ";
         } else {
-            oss << " title \"" << title[k] << "\" ";
+            oss << " title \"" << titles[k] << "\" ";
         }
-        if (smooth_style != smooth_style_t::none) {
-            oss << "smooth " + smooth_style_to_string(smooth_style);
+
+        // Add plot style
+        if (smooth_style == smooth_style_t::none) {
+            oss << "with " << this->plot_style_to_string(plot_style);
         } else {
-            oss << "with " + plot_style_to_string(plot_style);
+            oss << "smooth " << this->smooth_style_to_string(smooth_style);
         }
-        // Add line width if applicable.
-        if (line_width > 0) {
-            oss << " lw " << line_width;
+
+        // Add line options (if applicable)
+        if (is_line_style(plot_style)) {
+            if (line_width > 0) {
+                oss << " lw " << line_width;
+            }
+            if (!line_color.empty()) {
+                oss << " lc rgb \"" << line_color << "\"";
+            }
         }
+
+        // Add point options (if applicable)
+        if (is_point_style(plot_style)) {
+            if (point_style != point_style_t::none) {
+                oss << " pt " << static_cast<int>(point_style);
+            }
+            if (point_size > 0) {
+                oss << " ps " << point_size;
+            }
+        }
+
+        // Add a comma unless it's the last dataset
         if (k != x.size() - 1) {
-            oss << ",";
+            oss << ", ";
         }
     }
 
     oss << "\n";
-    for (unsigned int k = 0; k < x.size(); k++) {
-        typename X::const_iterator it;
-        it = x[k].begin();
-        for (; it != x[k].end(); it++)
-            oss << (*it) << std::endl;
-        oss << "e" << std::endl;
+
+    // Stream data inline for each dataset
+    for (const auto &dataset : x) {
+        for (const auto &value : dataset) {
+            oss << value << '\n';
+        }
+        oss << "e\n"; // End of dataset
     }
 
-    //
-    // Do the actual plot
-    //
-    this->send_cmd(oss.str()); //nplots++; two_dim = true;  already in cmd();
+    // Send the constructed command to Gnuplot
+    this->send_cmd(oss.str());
 
     return *this;
 }
@@ -265,31 +308,51 @@ Gnuplot &Gnuplot::plot_x(const std::vector<X> &x, const std::vector<std::string>
 template <typename X, typename Y>
 Gnuplot &Gnuplot::plot_xy(const X &x, const Y &y, const std::string &title)
 {
-    if (x.size() == 0 || y.size() == 0) {
-        throw GnuplotException("std::vectors too small");
+    // Check if the Gnuplot session is ready
+    if (!this->is_ready()) {
+        std::cerr << "Error: Invalid Gnuplot session. Cannot plot.\n";
+        return *this;
+    }
+
+    // Validate input vectors
+    if (x.empty() || y.empty()) {
+        std::cerr << "Error: Input vectors are empty. Cannot plot.\n";
         return *this;
     }
 
     if (x.size() != y.size()) {
-        throw GnuplotException("Length of the std::vectors differs");
+        std::cerr << "Error: Mismatch between the lengths of x and y vectors.\n";
         return *this;
     }
 
+    // Create a temporary file for storing the data
     std::ofstream file;
-    std::string name = create_tmpfile(file);
-    if (name == "")
+    std::string name = this->create_tmpfile(file);
+    if (name.empty()) {
+        std::cerr << "Error: Failed to create a temporary file.\n";
         return *this;
+    }
 
-    //
-    // write the data to file
-    //
-    for (unsigned int i = 0; i < x.size(); i++)
-        file << x[i] << " " << y[i] << std::endl;
+    // Write the data to the temporary file
+    for (size_t i = 0; i < x.size(); ++i) {
+        if (!(file << x[i] << " " << y[i] << '\n')) {
+            std::cerr << "Error: Failed to write data to the temporary file: " << name << '\n';
+            file.close();
+            return *this;
+        }
+    }
 
+    // Flush the file buffer and close the file
     file.flush();
+    if (file.fail()) {
+        std::cerr << "Error: Failed to flush data to the temporary file: " << name << '\n';
+        file.close();
+        return *this;
+    }
     file.close();
 
-    plotfile_xy(name, 1, 2, title);
+    // Pass the temporary file to Gnuplot for plotting
+    this->plotfile_xy(name, 1, 2, title);
 
     return *this;
 }
@@ -297,64 +360,103 @@ Gnuplot &Gnuplot::plot_xy(const X &x, const Y &y, const std::string &title)
 template <typename X, typename Y, typename E>
 Gnuplot &Gnuplot::plot_xy_err(const X &x, const Y &y, const E &dy, const std::string &title)
 {
-    if (x.size() == 0 || y.size() == 0 || dy.size() == 0) {
-        throw GnuplotException("std::vectors too small");
+    // Check if the Gnuplot session is ready
+    if (!this->is_ready()) {
+        std::cerr << "Error: Invalid Gnuplot session. Cannot plot.\n";
         return *this;
     }
 
-    if (x.size() != y.size() || y.size() != dy.size()) {
-        throw GnuplotException("Length of the std::vectors differs");
+    // Validate input vectors
+    if (x.empty() || y.empty() || dy.empty()) {
+        std::cerr << "Error: Input vectors are empty. Cannot plot.\n";
         return *this;
     }
 
+    if (x.size() != y.size() || x.size() != dy.size()) {
+        std::cerr << "Error: Mismatch between the lengths of x, y, and dy vectors.\n";
+        return *this;
+    }
+
+    // Create a temporary file for storing the data
     std::ofstream file;
-    std::string name = create_tmpfile(file);
-    if (name == "")
+    std::string name = this->create_tmpfile(file);
+    if (name.empty()) {
+        std::cerr << "Error: Failed to create a temporary file.\n";
         return *this;
+    }
 
-    //
-    // write the data to file
-    //
-    for (unsigned int i = 0; i < x.size(); i++)
-        file << x[i] << " " << y[i] << " " << dy[i] << std::endl;
+    // Write the data to the temporary file
+    for (size_t i = 0; i < x.size(); ++i) {
+        if (!(file << x[i] << " " << y[i] << " " << dy[i] << '\n')) {
+            std::cerr << "Error: Failed to write data to the temporary file: " << name << '\n';
+            file.close();
+            return *this;
+        }
+    }
 
+    // Flush the file buffer and close the file
     file.flush();
+    if (file.fail()) {
+        std::cerr << "Error: Failed to flush data to the temporary file: " << name << '\n';
+        file.close();
+        return *this;
+    }
     file.close();
 
-    // Do the actual plot
-    plotfile_xy_err(name, 1, 2, 3, title);
+    // Pass the temporary file to Gnuplot for plotting
+    this->plotfile_xy_err(name, 1, 2, 3, title);
+
     return *this;
 }
 
 template <typename X, typename Y, typename Z>
 Gnuplot &Gnuplot::plot_xyz(const X &x, const Y &y, const Z &z, const std::string &title)
 {
-    if (x.size() == 0 || y.size() == 0 || z.size() == 0) {
-        throw GnuplotException("std::vectors too small");
+    // Check if the Gnuplot session is ready
+    if (!this->is_ready()) {
+        std::cerr << "Error: Invalid Gnuplot session. Cannot plot.\n";
+        return *this;
+    }
+
+    // Validate input vectors
+    if (x.empty() || y.empty() || z.empty()) {
+        std::cerr << "Error: Input vectors are empty. Cannot plot.\n";
         return *this;
     }
 
     if (x.size() != y.size() || x.size() != z.size()) {
-        throw GnuplotException("Length of the std::vectors differs");
+        std::cerr << "Error: Mismatch between the lengths of x, y, and z vectors.\n";
         return *this;
     }
 
+    // Create a temporary file for storing the data
     std::ofstream file;
-    std::string name = create_tmpfile(file);
-    if (name == "") {
+    std::string name = this->create_tmpfile(file);
+    if (name.empty()) {
+        std::cerr << "Error: Failed to create a temporary file.\n";
         return *this;
     }
 
-    //
-    // write the data to file
-    //
-    for (unsigned int i = 0; i < x.size(); i++)
-        file << x[i] << " " << y[i] << " " << z[i] << std::endl;
+    // Write the data to the temporary file
+    for (size_t i = 0; i < x.size(); ++i) {
+        if (!(file << x[i] << " " << y[i] << " " << z[i] << '\n')) {
+            std::cerr << "Error: Failed to write data to the temporary file: " << name << '\n';
+            file.close();
+            return *this;
+        }
+    }
 
+    // Flush the file buffer and close the file
     file.flush();
+    if (file.fail()) {
+        std::cerr << "Error: Failed to flush data to the temporary file: " << name << '\n';
+        file.close();
+        return *this;
+    }
     file.close();
 
-    plotfile_xyz(name, 1, 2, 3, title);
+    // Pass the temporary file to Gnuplot for plotting
+    this->plotfile_xyz(name, 1, 2, 3, title);
 
     return *this;
 }
@@ -362,36 +464,53 @@ Gnuplot &Gnuplot::plot_xyz(const X &x, const Y &y, const Z &z, const std::string
 template <typename X, typename Y, typename Z>
 Gnuplot &Gnuplot::plot_3d_grid(const X &x, const Y &y, const Z &z, const std::string &title)
 {
-    // Validate input sizes
+    // Check if the Gnuplot session is ready
+    if (!this->is_ready()) {
+        std::cerr << "Error: Invalid Gnuplot session. Cannot plot.\n";
+        return *this;
+    }
+
+    // Validate input dimensions
     if (x.empty() || y.empty() || z.empty()) {
         std::cerr << "Error: Input vectors must not be empty.\n";
         return *this;
     }
     if (z.size() != x.size() || z[0].size() != y.size()) {
-        std::cerr << "Error: Dimensions of z must match x and y sizes.\n";
+        std::cerr << "Error: Dimensions of z must match sizes of x and y.\n";
         return *this;
     }
 
-    // Create a temporary file
+    // Create a temporary file for storing the grid data
     std::ofstream file;
-    std::string name = create_tmpfile(file);
+    std::string name = this->create_tmpfile(file);
     if (name.empty()) {
+        std::cerr << "Error: Failed to create a temporary file.\n";
         return *this;
     }
 
-    // Write the grid data to the file
+    // Write the grid data to the temporary file
     for (size_t i = 0; i < x.size(); ++i) {
         for (size_t j = 0; j < y.size(); ++j) {
-            file << x[i] << " " << y[j] << " " << z[i][j] << std::endl;
+            if (!(file << x[i] << " " << y[j] << " " << z[i][j] << '\n')) {
+                std::cerr << "Error: Failed to write data to the temporary file: " << name << '\n';
+                file.close();
+                return *this;
+            }
         }
         file << "\n"; // Separate rows for Gnuplot
     }
 
+    // Flush and close the file
     file.flush();
+    if (file.fail()) {
+        std::cerr << "Error: Failed to flush data to the temporary file: " << name << '\n';
+        file.close();
+        return *this;
+    }
     file.close();
 
-    // Call the next-level function
-    plotfile_xyz(name, 1, 2, 3, title);
+    // Pass the temporary file to Gnuplot for plotting
+    this->plotfile_xyz(name, 1, 2, 3, title);
 
     return *this;
 }
@@ -416,14 +535,16 @@ bool Gnuplot::set_gnuplot_path(const std::string &path)
 
 void Gnuplot::set_terminal_std(const std::string &type)
 {
+    // For Unix-like systems, ensure the DISPLAY variable is set when using X11.
 #if defined(unix) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
     if (type.find("x11") != std::string::npos && getenv("DISPLAY") == NULL) {
-        throw GnuplotException("Can't find DISPLAY variable");
+        std::cerr << "Error: Can't find DISPLAY environment variable. Ensure an active X11 session.\n";
+        return;
     }
 #endif
 
+    // Update the standard terminal type
     Gnuplot::m_terminal_std = type;
-    return;
 }
 
 /// Tokenizes a string into a container based on the specified delimiters.
@@ -461,9 +582,9 @@ Gnuplot &Gnuplot::replot()
     return *this;
 }
 
-bool Gnuplot::is_valid() const
+bool Gnuplot::is_ready() const
 {
-    return valid;
+    return valid && gnuplot_pipe;
 }
 
 Gnuplot &Gnuplot::reset_plot()
@@ -483,15 +604,41 @@ Gnuplot &Gnuplot::reset_all()
     return *this;
 }
 
-Gnuplot &Gnuplot::set_style(plot_style_t style)
+Gnuplot &Gnuplot::set_plot_style(plot_style_t style)
 {
     plot_style = style;
     return *this;
 }
 
-Gnuplot &Gnuplot::set_smooth(smooth_style_t style)
+Gnuplot &Gnuplot::set_smooth_style(smooth_style_t style)
 {
     smooth_style = style;
+    return *this;
+}
+
+Gnuplot &Gnuplot::set_line_style(line_style_t style, const std::string &custom_pattern)
+{
+    line_style = this->line_style_to_string(style, custom_pattern);
+    return *this;
+}
+
+Gnuplot &Gnuplot::set_line_color(const std::string &color)
+{
+    line_color = color;
+    return *this;
+}
+
+Gnuplot &Gnuplot::set_point_style(point_style_t style)
+{
+    point_style = style;
+    return *this;
+}
+
+Gnuplot &Gnuplot::set_point_size(double size)
+{
+    if (size > 0) {
+        point_size = size;
+    }
     return *this;
 }
 
@@ -593,14 +740,6 @@ Gnuplot &Gnuplot::unset_ylogscale()
 Gnuplot &Gnuplot::unset_zlogscale()
 {
     this->send_cmd("unset logscale z");
-    return *this;
-}
-
-Gnuplot &Gnuplot::set_pointsize(const double pointsize)
-{
-    std::ostringstream cmdstr;
-    cmdstr << "set pointsize " << pointsize;
-    this->send_cmd(cmdstr.str());
     return *this;
 }
 
@@ -814,26 +953,46 @@ Gnuplot &Gnuplot::set_cbrange(const double iFrom, const double iTo)
 Gnuplot &Gnuplot::plot_slope(const double a, const double b, const std::string &title)
 {
     std::ostringstream oss;
-    //
-    // command to be sent to gnuplot
-    //
-    if (nplots > 0 && two_dim == true)
-        oss << "replot ";
-    else
-        oss << "plot ";
 
-    oss << a << " * x + " << b << " title \"";
+    // Determine whether to use 'plot' or 'replot' based on the current plot state.
+    oss << ((nplots > 0 && two_dim) ? "replot " : "plot ");
 
-    if (title == "")
-        oss << "f(x) = " << a << " * x + " << b;
-    else
-        oss << title;
+    // Specify the equation and title for the plot.
+    if (title == "") {
+        oss << "title \"f(x) = " << a << " * x + " << b << "\"";
+    } else {
+        oss << "title \"" << title << "\"";
+    }
 
-    oss << "\" with " << plot_style_to_string(plot_style);
-
-    // Add line width if applicable.
-    if (line_width > 0) {
-        oss << " lw " << line_width;
+    // Specify the plot style or smoothing option.
+    if (smooth_style == smooth_style_t::none) {
+        oss << " with " << this->plot_style_to_string(plot_style);
+    } else {
+        oss << " smooth " << this->smooth_style_to_string(smooth_style);
+    }
+    // Include line color if it is specified.
+    if (!line_color.empty()) {
+        oss << " lc rgb \"" << line_color << "\"";
+    }
+    // Add line style options only if the plot style supports lines.
+    if (is_line_style(plot_style)) {
+        // Add line width if specified.
+        if (line_width > 0) {
+            oss << " lw " << line_width;
+        }
+        // Add line style if specified.
+        if (!line_style.empty()) {
+            oss << " " << line_style;
+        }
+    }
+    // Add point style and size only if the plot style supports points.
+    if (is_point_style(plot_style)) {
+        // Add point style if specified.
+        oss << " pt " << this->point_style_to_string(point_style);
+        // Add point size if specified.
+        if (point_size > 0) {
+            oss << " ps " << point_size;
+        }
     }
 
     //
@@ -847,66 +1006,92 @@ Gnuplot &Gnuplot::plot_slope(const double a, const double b, const std::string &
 Gnuplot &Gnuplot::plot_equation(const std::string &equation, const std::string &title)
 {
     std::ostringstream oss;
-    //
-    // command to be sent to gnuplot
-    //
-    if (nplots > 0 && two_dim == true)
-        oss << "replot ";
-    else
-        oss << "plot ";
-
+    // Determine whether to use 'plot' or 'replot' based on the current state.
+    oss << ((nplots > 0 && two_dim) ? "replot " : "plot ");
+    // Add the equation to be plotted.
     oss << equation;
-
-    if (title == "")
-        oss << " notitle";
-    else
-        oss << " title \"" << title << "\"";
-
-    oss << " with " << plot_style_to_string(plot_style);
-
-    // Add line width if applicable.
-    if (line_width > 0) {
-        oss << " lw " << line_width;
+    // Set the title or use 'notitle' if no title is provided.
+    oss << (title.empty() ? " notitle" : " title \"" + title + "\"");
+    // Specify the plot style or smoothing option.
+    if (smooth_style == smooth_style_t::none) {
+        oss << " with " << this->plot_style_to_string(plot_style);
+    } else {
+        oss << " smooth " << this->smooth_style_to_string(smooth_style);
     }
-
-    //
-    // Do the actual plot
-    //
+    // Include line color if it is specified.
+    if (!line_color.empty()) {
+        oss << " lc rgb \"" << line_color << "\"";
+    }
+    // Add line style options only if the plot style supports lines.
+    if (is_line_style(plot_style)) {
+        // Add line width if specified.
+        if (line_width > 0) {
+            oss << " lw " << line_width;
+        }
+        // Add line style if specified.
+        if (!line_style.empty()) {
+            oss << " " << line_style;
+        }
+    }
+    // Add point style and size only if the plot style supports points.
+    if (is_point_style(plot_style)) {
+        // Add point style if specified.
+        oss << " pt " << this->point_style_to_string(point_style);
+        // Add point size if specified.
+        if (point_size > 0) {
+            oss << " ps " << point_size;
+        }
+    }
+    // Send the constructed command to Gnuplot for execution.
     this->send_cmd(oss.str());
-
     return *this;
 }
 
 Gnuplot &Gnuplot::plot_equation3d(const std::string &equation, const std::string &title)
 {
     std::ostringstream oss;
-    //
-    // command to be sent to gnuplot
-    //
-    if (nplots > 0 && two_dim == false)
-        oss << "replot ";
-    else
-        oss << "splot ";
-
-    oss << equation << " title \"";
-
-    if (title == "")
-        oss << "f(x,y) = " << equation;
-    else
-        oss << title;
-
-    oss << "\" with " << plot_style_to_string(plot_style);
-
-    // Add line width if applicable.
-    if (line_width > 0) {
-        oss << " lw " << line_width;
+    // Determine whether to use 'splot' or 'replot' based on the current state.
+    oss << ((nplots > 0 && !two_dim) ? "replot " : "splot ");
+    // Add the equation.
+    oss << equation;
+    // Add the title or use a default title format.
+    if (title.empty()) {
+        oss << " title \"f(x, y) = " << equation << "\"";
+    } else {
+        oss << " title \"" << title << "\"";
     }
-
-    //
-    // Do the actual plot
-    //
+    // Specify the plot style or smoothing option.
+    if (smooth_style == smooth_style_t::none) {
+        oss << " with " << this->plot_style_to_string(plot_style);
+    } else {
+        oss << " smooth " << this->smooth_style_to_string(smooth_style);
+    }
+    // Include line color if it is specified.
+    if (!line_color.empty()) {
+        oss << " lc rgb \"" << line_color << "\"";
+    }
+    // Add line style options only if the plot style supports lines.
+    if (is_line_style(plot_style)) {
+        // Add line width if specified.
+        if (line_width > 0) {
+            oss << " lw " << line_width;
+        }
+        // Add line style if specified.
+        if (!line_style.empty()) {
+            oss << " " << line_style;
+        }
+    }
+    // Add point style and size only if the plot style supports points.
+    if (is_point_style(plot_style)) {
+        // Add point style if specified.
+        oss << " pt " << this->point_style_to_string(point_style);
+        // Add point size if specified.
+        if (point_size > 0) {
+            oss << " ps " << point_size;
+        }
+    }
+    // Send the constructed command to Gnuplot for execution.
     this->send_cmd(oss.str());
-
     return *this;
 }
 
@@ -922,14 +1107,34 @@ Gnuplot &Gnuplot::plotfile_x(const std::string &filename, const unsigned int col
         // Add a title or specify 'notitle' if no title is provided.
         oss << (title.empty() ? " notitle " : " title \"" + title + "\"");
         // Specify the plot style or smoothing option.
-        if (smooth_style != smooth_style_t::none) {
-            oss << " smooth " + smooth_style_to_string(smooth_style);
+        if (smooth_style == smooth_style_t::none) {
+            oss << " with " << this->plot_style_to_string(plot_style);
         } else {
-            oss << " with " + plot_style_to_string(plot_style);
+            oss << " smooth " << this->smooth_style_to_string(smooth_style);
         }
-        // Add line width if applicable.
-        if (line_width > 0) {
-            oss << " lw " << line_width;
+        // Include line color if it is specified.
+        if (!line_color.empty()) {
+            oss << " lc rgb \"" << line_color << "\"";
+        }
+        // Add line style options only if the plot style supports lines.
+        if (is_line_style(plot_style)) {
+            // Add line width if specified.
+            if (line_width > 0) {
+                oss << " lw " << line_width;
+            }
+            // Add line style if specified.
+            if (!line_style.empty()) {
+                oss << " " << line_style;
+            }
+        }
+        // Add point style and size only if the plot style supports points.
+        if (is_point_style(plot_style)) {
+            // Add point style if specified.
+            oss << " pt " << this->point_style_to_string(point_style);
+            // Add point size if specified.
+            if (point_size > 0) {
+                oss << " ps " << point_size;
+            }
         }
         // Send the constructed command to Gnuplot for execution
         this->send_cmd(oss.str());
@@ -951,15 +1156,35 @@ Gnuplot &Gnuplot::plotfile_xy(const std::string &filename,
         oss << " \"" << filename << "\" using " << column_x << ":" << column_y;
         // Add a title or specify 'notitle' if no title is provided
         oss << (title.empty() ? " notitle " : " title \"" + title + "\"");
-        // Specify the plot style or smoothing option
-        if (smooth_style != smooth_style_t::none) {
-            oss << " smooth " + smooth_style_to_string(smooth_style);
+        // Specify the plot style or smoothing option.
+        if (smooth_style == smooth_style_t::none) {
+            oss << " with " << this->plot_style_to_string(plot_style);
         } else {
-            oss << " with " + plot_style_to_string(plot_style);
+            oss << " smooth " << this->smooth_style_to_string(smooth_style);
         }
-        // Add line width if applicable.
-        if (line_width > 0) {
-            oss << " lw " << line_width;
+        // Include line color if it is specified.
+        if (!line_color.empty()) {
+            oss << " lc rgb \"" << line_color << "\"";
+        }
+        // Add line style options only if the plot style supports lines.
+        if (is_line_style(plot_style)) {
+            // Add line width if specified.
+            if (line_width > 0) {
+                oss << " lw " << line_width;
+            }
+            // Add line style if specified.
+            if (!line_style.empty()) {
+                oss << " " << line_style;
+            }
+        }
+        // Add point style and size only if the plot style supports points.
+        if (is_point_style(plot_style)) {
+            // Add point style if specified.
+            oss << " pt " << this->point_style_to_string(point_style);
+            // Add point size if specified.
+            if (point_size > 0) {
+                oss << " ps " << point_size;
+            }
         }
         // Send the constructed command to Gnuplot for execution
         this->send_cmd(oss.str());
@@ -1003,11 +1228,35 @@ Gnuplot &Gnuplot::plotfile_xyz(const std::string &filename,
         oss << " \"" << filename << "\" using " << column_x << ":" << column_y << ":" << column_z;
         // Add a title or specify 'notitle' if no title is provided
         oss << (title.empty() ? " notitle" : " title \"" + title + "\"");
-        // Add the style.
-        oss << " with " + plot_style_to_string(plot_style);
-        // Add line width if applicable.
-        if (line_width > 0) {
-            oss << " lw " << line_width;
+        // Specify the plot style or smoothing option.
+        if (smooth_style == smooth_style_t::none) {
+            oss << " with " << this->plot_style_to_string(plot_style);
+        } else {
+            oss << " smooth " << this->smooth_style_to_string(smooth_style);
+        }
+        // Include line color if it is specified.
+        if (!line_color.empty()) {
+            oss << " lc rgb \"" << line_color << "\"";
+        }
+        // Add line style options only if the plot style supports lines.
+        if (is_line_style(plot_style)) {
+            // Add line width if specified.
+            if (line_width > 0) {
+                oss << " lw " << line_width;
+            }
+            // Add line style if specified.
+            if (!line_style.empty()) {
+                oss << " " << line_style;
+            }
+        }
+        // Add point style and size only if the plot style supports points.
+        if (is_point_style(plot_style)) {
+            // Add point style if specified.
+            oss << " pt " << this->point_style_to_string(point_style);
+            // Add point size if specified.
+            if (point_size > 0) {
+                oss << " ps " << point_size;
+            }
         }
         // Send the constructed command to Gnuplot for execution
         this->send_cmd(oss.str());
@@ -1067,130 +1316,72 @@ Gnuplot &Gnuplot::plot_image(const unsigned char *ucPicBuf,
     return *this;
 }
 
-void Gnuplot::init()
-{
-    // char * getenv ( const char * name );  get value of environment variable
-    // Retrieves a C string containing the value of the environment variable
-    // whose name is specified as argument.  If the requested variable is not
-    // part of the environment list, the function returns a NULL pointer.
-#if (defined(unix) || defined(__unix) || defined(__unix__)) && !defined(__APPLE__)
-    if (getenv("DISPLAY") == NULL) {
-        valid = false;
-        throw GnuplotException("Can't find DISPLAY variable");
-    }
-#endif
-
-    // if gnuplot not available
-    if (!Gnuplot::get_program_path()) {
-        valid = false;
-        throw GnuplotException("Can't find gnuplot");
-    }
-
-    //
-    // open pipe
-    //
-    std::string tmp = Gnuplot::m_gnuplot_path + "/" + Gnuplot::m_gnuplot_filename;
-
-    // FILE *popen(const char *command, const char *mode);
-    // The popen() function shall execute the command specified by the string
-    // command, create a pipe between the calling program and the executed
-    // command, and return a pointer to a stream that can be used to either read
-    // from or write to the pipe.
-    gnuplot_pipe = OPEN_PIPE(tmp.c_str(), "w");
-
-    // popen() shall return a pointer to an open stream that can be used to read
-    // or write to the pipe.  Otherwise, it shall return a null pointer and may
-    // set errno to indicate the error.
-    if (!gnuplot_pipe) {
-        valid = false;
-        throw GnuplotException("Couldn't open connection to gnuplot");
-    }
-
-    nplots       = 0;
-    valid        = true;
-    smooth_style = smooth_style_t::none;
-    plot_style   = plot_style_t::none;
-
-    //set terminal type
-    showonscreen();
-
-    return;
-}
-
 bool Gnuplot::get_program_path()
 {
-    //
-    // first look in m_gnuplot_path for Gnuplot
-    //
+    // Check the first location: `m_gnuplot_path`
     std::string tmp = Gnuplot::m_gnuplot_path + "/" + Gnuplot::m_gnuplot_filename;
 
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__TOS_WIN__)
-    if (Gnuplot::file_exists(tmp, 0)) // check existence
-#elif defined(unix) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
-    if (Gnuplot::file_exists(tmp, 1)) // check existence and execution permission
-#endif
-    {
+    if (Gnuplot::file_exists(tmp, 1)) { // Check for existence and execution permission
         return true;
     }
 
-    //
-    // second look in PATH for Gnuplot
-    //
-    char *path;
-    // Retrieves a C string containing the value of environment variable PATH
-    path = getenv("PATH");
-
-    if (path == NULL) {
-        throw GnuplotException("Path is not set");
+    // Check the second location: System PATH
+    char *path = getenv("PATH");
+    if (path == nullptr) {
+        std::cerr << "Error: PATH environment variable is not set.\n";
         return false;
-    } else {
-        std::list<std::string> ls;
-
-        //split path (one long string) into list ls of strings
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__TOS_WIN__)
-        tokenize(ls, path, ";");
-#elif defined(unix) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
-        tokenize(ls, path, ":");
-#endif
-
-        // scan list for Gnuplot program files
-        for (std::list<std::string>::const_iterator i = ls.begin(); i != ls.end(); ++i) {
-            tmp = (*i) + "/" + Gnuplot::m_gnuplot_filename;
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__TOS_WIN__)
-            if (Gnuplot::file_exists(tmp, 0)) // check existence
-#elif defined(unix) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
-            if (Gnuplot::file_exists(tmp, 1)) // check existence and execution permission
-#endif
-            {
-                Gnuplot::m_gnuplot_path = *i; // set m_gnuplot_path
-                return true;
-            }
-        }
-
-        tmp = "Can't find gnuplot neither in PATH nor in \"" + Gnuplot::m_gnuplot_path + "\"";
-        throw GnuplotException(tmp);
     }
+
+    // Tokenize the PATH variable into directories
+    std::list<std::string> paths;
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__TOS_WIN__)
+    tokenize(paths, path, ";");
+#elif defined(unix) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
+    tokenize(paths, path, ":");
+#endif
+
+    // Search for the Gnuplot executable in each directory
+    for (const auto &dir : paths) {
+        tmp = dir + "/" + Gnuplot::m_gnuplot_filename;
+        if (Gnuplot::file_exists(tmp, 1)) { // Check for existence and execution permission
+            Gnuplot::m_gnuplot_path = dir;  // Set `m_gnuplot_path`
+            return true;
+        }
+    }
+
+    // Gnuplot was not found
+    std::cerr << "Error: Gnuplot not found in PATH or in \"" << Gnuplot::m_gnuplot_path << "\".\n";
+    return false;
 }
 
 bool Gnuplot::file_exists(const std::string &filename, int mode)
 {
+    // Validate mode argument
     if (mode < 0 || mode > 7) {
-        throw std::runtime_error("In function \"Gnuplot::file_exists\": mode\
-                has to be an integer between 0 and 7");
+        std::cerr << "Error: Invalid mode in Gnuplot::file_exists. Mode must be between 0 and 7.\n";
         return false;
     }
 
-    // int _access(const char *path, int mode);
-    //  returns 0 if the file has the given mode,
-    //  it returns -1 if the named file does not exist or is not accessible in
-    //  the given mode
-    // mode = 0 (F_OK) (default): checks file for existence only
-    // mode = 1 (X_OK): execution permission
-    // mode = 2 (W_OK): write permission
-    // mode = 4 (R_OK): read permission
-    // mode = 6       : read and write permission
-    // mode = 7       : read, write and execution permission
-    return (FILE_ACCESS(filename.c_str(), mode) == 0);
+    // Check file access using platform-independent macro
+    // mode = 0: Existence, 1: Execute, 2: Write, 4: Read
+    if (FILE_ACCESS(filename.c_str(), mode) == 0) {
+        return true; // File exists with the required mode
+    }
+
+    // File does not exist or is inaccessible
+    return false;
+}
+
+bool Gnuplot::is_line_style(plot_style_t style)
+{
+    return (style == plot_style_t::lines || style == plot_style_t::lines_points || style == plot_style_t::steps ||
+            style == plot_style_t::fsteps || style == plot_style_t::histeps || style == plot_style_t::filled_curves ||
+            style == plot_style_t::impulses);
+}
+
+bool Gnuplot::is_point_style(plot_style_t style)
+{
+    return (style == plot_style_t::points || style == plot_style_t::lines_points);
 }
 
 bool Gnuplot::file_ready(const std::string &filename)
@@ -1208,42 +1399,39 @@ bool Gnuplot::file_ready(const std::string &filename)
     std::cerr << "File \"" << filename << "\" does not exist.";
     return true;
 }
-
 std::string Gnuplot::create_tmpfile(std::ofstream &tmp)
 {
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__TOS_WIN__)
-    char filename[] = "gnuplotiXXXXXX"; //tmp file in working directory
+    char filename[] = "gnuplotiXXXXXX"; // Temporary file in working directory
 #elif defined(unix) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
-    char filename[] = "/tmp/gnuplotiXXXXXX"; // tmp file in /tmp
+    char filename[] = "/tmp/gnuplotiXXXXXX"; // Temporary file in /tmp
 #endif
 
     // Check if the maximum number of temporary files has been reached.
-    if (Gnuplot::m_tmpfile_num == GP_MAX_TMP_FILES - 1) {
-        std::ostringstream except;
-        except << "Maximum number of temporary files reached (" << GP_MAX_TMP_FILES << "): cannot open more files.\n";
-        throw GnuplotException(except.str());
+    if (Gnuplot::m_tmpfile_num >= GP_MAX_TMP_FILES) {
+        std::cerr << "Error: Maximum number of temporary files reached (" << GP_MAX_TMP_FILES
+                  << "). Cannot create more files.\n";
+        return std::string(); // Return an empty string to indicate failure
     }
 
-    // Generate a unique temporary filename and open it.
+    // Generate a unique temporary filename.
     if (CREATE_TEMP_FILE(filename)) {
-        std::ostringstream except;
-        except << "Cannot create temporary file \"" << filename << "\".";
-        throw GnuplotException(except.str());
+        std::cerr << "Error: Cannot create temporary file \"" << filename << "\".\n";
+        return std::string(); // Return an empty string to indicate failure
     }
 
     // Open the temporary file for writing.
     tmp.open(filename);
-    if (tmp.bad()) {
-        std::ostringstream except;
-        except << "Cannot open temporary file \"" << filename << "\" for writing.";
-        throw GnuplotException(except.str());
+    if (!tmp.is_open() || tmp.bad()) {
+        std::cerr << "Error: Cannot open temporary file \"" << filename << "\" for writing.\n";
+        return std::string(); // Return an empty string to indicate failure
     }
 
-    // Store the temporary file filename for cleanup and increment the counter.
+    // Store the temporary file name for cleanup and increment the counter.
     tmpfile_list.push_back(filename);
     Gnuplot::m_tmpfile_num++;
 
-    return filename;
+    return filename; // Return the name of the successfully created temporary file
 }
 
 Gnuplot &Gnuplot::apply_contour_settings()
@@ -1321,7 +1509,7 @@ std::string Gnuplot::plot_style_to_string(plot_style_t style)
     case plot_style_t::histograms:
         return "histograms";
     default:
-        return "points"; // Default fallback
+        return "lines";
     }
 }
 
@@ -1341,23 +1529,49 @@ std::string Gnuplot::smooth_style_to_string(smooth_style_t style)
     case smooth_style_t::sbezier:
         return "sbezier";
     default:
-        return ""; // Default: No smoothing
+        return std::string(); // Default: No smoothing
     }
+}
+
+std::string Gnuplot::line_style_to_string(line_style_t style, const std::string &custom_pattern)
+{
+    switch (style) {
+    case line_style_t::solid:
+        return "dashtype 1"; // Solid
+    case line_style_t::dashed:
+        return "dashtype 2"; // Dashed
+    case line_style_t::dotted:
+        return "dashtype 3"; // Dotted
+    case line_style_t::dash_dot:
+        return "dashtype 4"; // Dash-dot
+    case line_style_t::dash_dot_dot:
+        return "dashtype 5"; // Dash-dot-dot
+    case line_style_t::custom:
+        return "dashtype (" + custom_pattern + ")";
+    default:
+        return "dashtype 1"; // Fallback to solid
+    }
+}
+
+std::string Gnuplot::point_style_to_string(point_style_t style)
+{
+    return std::to_string(static_cast<int>(style));
 }
 
 void Gnuplot::remove_tmpfiles()
 {
-    if ((tmpfile_list).size() > 0) {
-        for (unsigned int i = 0; i < tmpfile_list.size(); i++) {
-            if (remove(tmpfile_list[i].c_str()) != 0) {
-                std::ostringstream except;
-                except << "Cannot remove temporary file \"" << tmpfile_list[i] << "\"";
-                throw GnuplotException(except.str());
-            }
-        }
-
-        Gnuplot::m_tmpfile_num -= static_cast<int>(tmpfile_list.size());
+    if (tmpfile_list.empty()) {
+        return; // No temporary files to remove
     }
+    for (const auto &tmpfile : tmpfile_list) {
+        if (std::remove(tmpfile.c_str()) != 0) {
+            std::cerr << "Warning: Unable to remove temporary file \"" << tmpfile << "\".\n";
+        }
+    }
+    // Adjust the global temporary file counter
+    Gnuplot::m_tmpfile_num -= static_cast<int>(tmpfile_list.size());
+    // Clear the list of temporary files
+    tmpfile_list.clear();
 }
 
 } // namespace gnuplotcpp

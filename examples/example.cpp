@@ -11,51 +11,81 @@
 
 #include <gnuplotcpp/gnuplot.hpp>
 
-void wait_for_key()
+static inline void wait_for_key()
 {
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) ||                                                         \
     defined(__TOS_WIN__) // every keypress registered, also arrow keys
-    std::cout << std::endl << "Press any key to continue..." << std::endl;
-
+    std::cout << "Press any key to continue...\n";
     FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
     _getch();
 #elif defined(unix) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
-    std::cout << std::endl << "Press ENTER to continue..." << std::endl;
-
+    std::cout << "Press ENTER to continue...\n";
     std::cin.clear();
     std::cin.ignore(std::cin.rdbuf()->in_avail());
     std::cin.get();
 #endif
-    return;
 }
 
 int main(int, char *[])
 {
     using namespace gnuplotcpp;
 
-    try {
+    // Initialize gnuplot.
+    Gnuplot gnuplot;
+    if (!gnuplot.is_ready()) {
+        std::cerr << "Failed to initialize Gnuplot session.\n";
+        return 1;
+    }
+    // Plot the data with a title.
+    gnuplot.set_line_color("red").plot_equation("sin(x)", "sine");
+    // Pause for the user to view.
+    wait_for_key();
+
+    // {
+    //     // Initialize Gnuplot
+    //     Gnuplot gnuplot;
+
+    //     // Set contour type to both base and surface
+    //     gnuplot.set_contour_type(contour_type_t::both);
+
+    //     // Apply the settings
+    //     gnuplot.apply_contour_settings();
+
+    //     // Data to plot
+    //     std::vector<double> x1_data = { 1.5, 1.0, 0.5, 4.0, 2.0 };
+    //     std::vector<double> x2_data = { .5, .25, 0.15, 6.0, 1.05 };
+    //     // Plot the data with a title
+    //     gnuplot.set_plot_style(plot_style_t::lines)
+    //         .set_line_width(4.0)
+    //         .set_xlabel("X Axis")
+    //         .set_ylabel("Y Axis")
+    //         .plot_x(x1_data, "X1")
+    //         .plot_x(x1_data, "X2");
+
+    //     // Pause for the user to view
+    //     wait_for_key();
+    // }
+    // {
+    //     // Initialize gnuplot.
+    //     Gnuplot gnuplot;
+    //     // Plot the data with a title.
+    //     gnuplot.set_plot_style(plot_style_t::impulses)
+    //         .set_line_width(2.5)
+    //         .set_point_size(2.0)
+    //         .set_line_color("blue")
+    //         .plot_equation("sin(x)", "sine");
+    //     // Pause for the user to view.
+    //     wait_for_key();
+    // }
+    // {
+    //     // Initialize gnuplot.
+    //     Gnuplot gp;
+    //     // Plot.
+    //     gp.set_line_color("red").set_line_width(2.0).plot_equation3d("sin(x)*cos(y)", "3D Sine-Cosine");
+    //     // Pause for the user to view.
+    //     wait_for_key();
+    // }
 #if 0
-        // Initialize Gnuplot
-        Gnuplot g1;
-
-        // Set contour type to both base and surface
-        g1.set_contour_type(contour_type_t::both);
-
-        // Apply the settings
-        g1.apply_contour_settings();
-
-        // Data to plot
-        std::vector<double> g1_x1_data = { 1.5, 1.0, 0.5, 4.0, 2.0 };
-        std::vector<double> g1_x2_data = { .5, .25, 0.15, 6.0, 1.05 };
-        // Plot the data with a title
-        g1.set_style(plot_style_t::lines)
-            .set_line_width(4.0)
-            .set_xlabel("X Axis")
-            .set_ylabel("Y Axis")
-            .plot_x(g1_x1_data, "X1")
-            .plot_x(g1_x1_data, "X2");
-#endif
-
         Gnuplot gnuplot;
 
         const std::size_t grid_size = 50U;
@@ -108,41 +138,7 @@ int main(int, char *[])
 
         // Pause for the user to view
         wait_for_key();
-        
-        // // Initialize Gnuplot
-        // Gnuplot g2;
-        // // Create multiple datasets
-        // std::vector<std::vector<double>> datasets = {
-        //     { 1.0, 2.0, 3.0, 4.0, 5.0 }, // Dataset 1
-        //     { 5.0, 4.0, 3.0, 2.0, 1.0 }, // Dataset 2
-        //     { 2.0, 3.0, 5.0, 7.0, 11.0 } // Dataset 3 (e.g., prime numbers)
-        // };
-        // // Titles for each dataset
-        // std::vector<std::string> titles = { "Linear Increase", "Linear Decrease", "Primes" };
-        // // Test plot_x with multiple datasets and titles
-        // g2.set_style("lines").plot_x(datasets, titles);
-
-        // Gnuplot g3;
-        // // Example data
-        // std::vector<double> g3_x = {1.0, 2.0, 3.0, 4.0, 5.0};
-        // std::vector<double> g3_y = {2.0, 4.0, 6.0, 8.0, 10.0};
-        // // Plot x vs y with a title
-        // g3.set_style("lines").plot_xy(g3_x, g3_y, "X vs Y");
-
-        // Gnuplot g4;
-        // // Example data with error bars
-        // std::vector<double> g4_x = {1.0, 2.0, 3.0, 4.0, 5.0};
-        // std::vector<double> g4_y = {2.0, 4.0, 6.0, 8.0, 10.0};
-        // std::vector<double> g4_dy = {0.1, 0.2, 0.15, 0.25, 0.3};
-
-        // // Plot with error bars
-        // g4.set_style("lines").plot_xy(g4_x, g4_y).plot_xy_err(g4_x, g4_y, g4_dy, "Error Bars Example");
-        // fflush(g4.gnuplot_pipe);
-
-    } catch (const GnuplotException &e) {
-        // Handle exceptions.
-        std::cerr << "GnuplotException: " << e.what() << std::endl;
-    }
+#endif
 
 #if 0
     std::cout << "*** example of gnuplot control through C++ ***\n";
@@ -188,15 +184,15 @@ int main(int, char *[])
         std::cout << std::endl << std::endl << "*** showing styles" << std::endl;
 
         std::cout << "sine in points" << std::endl;
-        g1.set_pointsize(0.8).set_style("points");
+        g1.set_pointsize(0.8).set_plot_style("points");
         g1.plot_equation("sin(x)", "points");
 
         std::cout << "sine in impulses" << std::endl;
-        g1.set_style("impulses");
+        g1.set_plot_style("impulses");
         g1.plot_equation("sin(x)", "impulses");
 
         std::cout << "sine in steps" << std::endl;
-        g1.set_style("steps");
+        g1.set_plot_style("steps");
         g1.plot_equation("sin(x)", "steps");
 
         //
@@ -208,7 +204,7 @@ int main(int, char *[])
         std::cout << "y = sin(x) saved to test_output.ps in working directory" << std::endl;
         //      g1.savetops("test_output");
         g1.savetofigure("test_output.ps", "postscript color");
-        g1.set_style("lines").set_samples(300).set_xrange(0, 5);
+        g1.set_plot_style("lines").set_samples(300).set_xrange(0, 5);
         g1.plot_equation("sin(12*x)*exp(-x)").plot_equation("exp(-x)");
 
         g1.showonscreen(); // window output
@@ -236,12 +232,12 @@ int main(int, char *[])
 
         g1.reset_all();
         std::cout << std::endl << std::endl << "*** user-defined lists of doubles" << std::endl;
-        g1.set_style("impulses").plot_x(y, "user-defined doubles");
+        g1.set_plot_style("impulses").plot_x(y, "user-defined doubles");
 
         g1.reset_plot();
         std::cout << std::endl << std::endl << "*** user-defined lists of points (x,y)" << std::endl;
         g1.set_grid();
-        g1.set_style("points").plot_xy(x, y, "user-defined points 2d");
+        g1.set_plot_style("points").plot_xy(x, y, "user-defined points 2d");
 
         g1.reset_plot();
         std::cout << std::endl << std::endl << "*** user-defined lists of points (x,y,z)" << std::endl;
@@ -259,7 +255,7 @@ int main(int, char *[])
         std::cout << "*** multiple output windows" << std::endl;
 
         g1.reset_plot();
-        g1.set_style("lines");
+        g1.set_plot_style("lines");
         std::cout << "window 1: sin(x)" << std::endl;
         g1.set_grid().set_samples(600).set_xrange(0, 300);
         g1.plot_equation("sin(x)+sin(x*1.1)");
@@ -269,8 +265,8 @@ int main(int, char *[])
         gnuplotcpp::Gnuplot g2;
         std::cout << "window 2: user defined points" << std::endl;
         g2.plot_x(y2, "points");
-        g2.set_smooth().plot_x(y2, "cspline");
-        g2.set_smooth("bezier").plot_x(y2, "bezier");
+        g2.set_smooth_style().plot_x(y2, "cspline");
+        g2.set_smooth_style("bezier").plot_x(y2, "bezier");
         g2.unset_smooth();
 
         gnuplotcpp::Gnuplot g3("lines");

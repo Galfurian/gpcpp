@@ -31,7 +31,7 @@
 namespace gnuplotcpp
 {
 
-/// Enum representing the various plotting styles available in Gnuplot.
+/// @brief Enum representing the various plotting styles available in Gnuplot.
 enum class plot_style_t {
     none,          ///< Default fallback style (points).
     lines,         ///< Lines connecting the data points.
@@ -47,7 +47,7 @@ enum class plot_style_t {
     histograms,    ///< Histograms.
 };
 
-/// Enum representing the smoothing styles available in Gnuplot.
+/// @brief Enum representing the smoothing styles available in Gnuplot.
 enum class smooth_style_t {
     none,      ///< No smoothing (default).
     unique,    ///< Unique smoothing.
@@ -58,7 +58,7 @@ enum class smooth_style_t {
     sbezier,   ///< Subdivided Bezier smoothing.
 };
 
-/// Contour type options for Gnuplot
+/// @brief Contour type options for Gnuplot
 enum class contour_type_t {
     none,    ///< Disables contouring
     base,    ///< Contours on the base (XY-plane)
@@ -66,89 +66,46 @@ enum class contour_type_t {
     both,    ///< Contours on both base and surface
 };
 
-/// Contour parameter options for Gnuplot
+/// @brief Contour parameter options for Gnuplot
 enum class contour_param_t {
-    levels,    // Number of contour levels
-    increment, // Contour increment settings
-    discrete,  // Specific discrete contour levels
+    levels,    ///< Number of contour levels
+    increment, ///< Contour increment settings
+    discrete,  ///< Specific discrete contour levels
 };
 
-/// @brief Custom exception for Gnuplot-related errors.
-/// Provides detailed error messages and additional context if necessary.
-class GnuplotException : public std::runtime_error {
-public:
-    /// @brief Constructor accepting an error message.
-    /// @param msg The error message describing the exception.
-    explicit GnuplotException(const std::string &msg) : std::runtime_error("[GnuplotException] " + msg)
-    {
-    }
+/// @brief Enumeration for Gnuplot line styles.
+enum class line_style_t {
+    solid,        ///< Solid line (default)
+    dashed,       ///< Dashed line
+    dotted,       ///< Dotted line
+    dash_dot,     ///< Dash-dot pattern
+    dash_dot_dot, ///< Dash-dot-dot pattern
+    custom        ///< Custom dash pattern
+};
 
-    /// @brief Constructor accepting an error message and context information.
-    /// @param msg The error message describing the exception.
-    /// @param context Additional context for the error.
-    GnuplotException(const std::string &msg, const std::string &context)
-        : std::runtime_error("[GnuplotException] " + msg + " | Context: " + context)
-    {
-    }
-
-    /// @brief Retrieve the error message without the GnuplotException prefix.
-    /// @return The plain error message.
-    std::string getPlainMessage() const noexcept
-    {
-        return std::string(what()).substr(18); // Skips the "[GnuplotException] " prefix.
-    }
+// Enum representing the various predefined point styles available in Gnuplot
+enum class point_style_t {
+    none,                     // No point (invisible).
+    plus,                     // Plus (+) shape.
+    cross,                    // Cross (×) shape.
+    asterisk,                 // Asterisk (*) shape.
+    open_circle,              // Open circle (○).
+    filled_circle,            // Filled circle (●).
+    open_square,              // Open square (□).
+    filled_square,            // Filled square (■).
+    open_triangle,            // Open triangle (△).
+    filled_triangle,          // Filled triangle (▲).
+    open_inverted_triangle,   // Open inverted triangle (▽).
+    filled_inverted_triangle, // Filled inverted triangle (▼).
+    open_diamond,             // Open diamond (◇).
+    filled_diamond,           // Filled diamond (◆).
 };
 
 /// @brief Main Gnuplot class for managing plots.
 class Gnuplot {
 public:
-    /// @brief Constructs a Gnuplot session with a specified plot style.
-    /// @param style The plotting style (default is "points").
-    Gnuplot(plot_style_t style = plot_style_t::none);
-
-    /// @brief Constructs a Gnuplot session and plots a single vector.
-    /// @param x The data points to plot.
-    /// @param title The title of the plot (default is empty).
-    /// @param style The plotting style (default is "points").
-    /// @param labelx The label for the x-axis (default is "x").
-    /// @param labely The label for the y-axis (default is "y").
-    Gnuplot(const std::vector<double> &x,
-            const std::string &title  = "",
-            plot_style_t style        = plot_style_t::none,
-            const std::string &labelx = "x",
-            const std::string &labely = "y");
-
-    /// @brief Constructs a Gnuplot session and plots paired x and y vectors.
-    /// @param x The data points for the x-axis.
-    /// @param y The data points for the y-axis.
-    /// @param title The title of the plot (default is empty).
-    /// @param style The plotting style (default is "points").
-    /// @param labelx The label for the x-axis (default is "x").
-    /// @param labely The label for the y-axis (default is "y").
-    Gnuplot(const std::vector<double> &x,
-            const std::vector<double> &y,
-            const std::string &title  = "",
-            plot_style_t style        = plot_style_t::none,
-            const std::string &labelx = "x",
-            const std::string &labely = "y");
-
-    /// @brief Constructs a Gnuplot session and plots triples (x, y, z) vectors.
-    /// @param x The data points for the x-axis.
-    /// @param y The data points for the y-axis.
-    /// @param z The data points for the z-axis.
-    /// @param title The title of the plot (default is empty).
-    /// @param style The plotting style (default is "points").
-    /// @param labelx The label for the x-axis (default is "x").
-    /// @param labely The label for the y-axis (default is "y").
-    /// @param labelz The label for the z-axis (default is "z").
-    Gnuplot(const std::vector<double> &x,
-            const std::vector<double> &y,
-            const std::vector<double> &z,
-            const std::string &title  = "",
-            plot_style_t style        = plot_style_t::none,
-            const std::string &labelx = "x",
-            const std::string &labely = "y",
-            const std::string &labelz = "z");
+    /// @brief Constructs a Gnuplot session.
+    Gnuplot();
 
     /// @brief Destructor to clean up and delete temporary files.
     ~Gnuplot();
@@ -199,17 +156,33 @@ public:
     /// Sets the plotting style for the current Gnuplot session.
     /// @param style The plot_style_t enum value representing the desired plotting style.
     /// @return Reference to the current Gnuplot object.
-    Gnuplot &set_style(plot_style_t style);
+    Gnuplot &set_plot_style(plot_style_t style);
 
     /// @brief Sets the smoothing style for the current Gnuplot session.
     /// @param style The smooth_style enum value representing the desired smoothing style.
     /// @return Reference to the current Gnuplot object.
-    Gnuplot &set_smooth(smooth_style_t style = smooth_style_t::csplines);
+    Gnuplot &set_smooth_style(smooth_style_t style = smooth_style_t::csplines);
+
+    /// @brief Sets the line style for the Gnuplot plot.
+    /// @param style The line style to set (solid, dashed, custom, etc.).
+    /// @param custom_pattern Optional custom dash pattern if the style is set to custom.
+    /// @return Reference to the Gnuplot object for chaining.
+    Gnuplot &set_line_style(line_style_t style, const std::string &custom_pattern = "");
+
+    /// @brief Sets the line color for the Gnuplot plot.
+    /// @param color The line color (e.g., "red", "#ff0000").
+    /// @return Reference to the Gnuplot object for chaining.
+    Gnuplot &set_line_color(const std::string &color);
+
+    /// @brief Sets the style of points used in plots.
+    /// @param style An integer specifying the Gnuplot point style.
+    /// @return Reference to the current Gnuplot object.
+    Gnuplot &set_point_style(point_style_t style);
 
     /// @brief Sets the size of points used in plots.
-    /// @param pointsize The size of the points (default is 1.0).
-    /// @return A reference to the current Gnuplot object.
-    Gnuplot &set_pointsize(const double pointsize = 1.0);
+    /// @param size A positive value specifying the Gnuplot point size.
+    /// @return Reference to the current Gnuplot object.
+    Gnuplot &set_point_size(double size);
 
     /// @brief Sets the line width for the current Gnuplot session.
     /// @param width The desired line width. Must be greater than 0.
@@ -426,10 +399,10 @@ public:
     /// @brief Plots multiple vectors with separate titles.
     /// @tparam X The type of the data in the vectors.
     /// @param x The vectors of data to plot.
-    /// @param title The titles for each vector.
+    /// @param titles The titles for each vector.
     /// @return A reference to the current Gnuplot object.
     template <typename X>
-    Gnuplot &plot_x(const std::vector<X> &x, const std::vector<std::string> &title);
+    Gnuplot &plot_x(const std::vector<X> &x, const std::vector<std::string> &titles);
 
     /// @brief Plots x, y pairs of data from a file.
     /// @param filename The name of the file containing the data.
@@ -560,7 +533,7 @@ public:
 
     /// @brief Checks if the current Gnuplot session is valid.
     /// @return `true` if the session is valid, `false` otherwise.
-    bool is_valid() const;
+    bool is_ready() const;
 
 private:
     /// @brief Initializes the Gnuplot session.
@@ -597,6 +570,16 @@ private:
     /// @return `true` if the file exists and satisfies the mode, `false` otherwise.
     static bool file_exists(const std::string &filename, int mode = 0);
 
+    /// @brief Checks if the specified style is a line style.
+    /// @param style The plot style to check.
+    /// @return true if the style is a line style, false otherwise.
+    static bool is_line_style(plot_style_t style);
+
+    /// @brief Checks if the specified style is a point style.
+    /// @param style The plot style to check.
+    /// @return true if the style is a point style, false otherwise.
+    static bool is_point_style(plot_style_t style);
+
     /// @brief Converts a plot_style_t value to its corresponding Gnuplot string representation.
     /// @param style The plotting style as a plot_style_t enum value.
     /// @return A string representing the corresponding Gnuplot style.
@@ -606,6 +589,17 @@ private:
     /// @param style The smoothing style to convert.
     /// @return A string representing the Gnuplot smoothing style.
     std::string smooth_style_to_string(smooth_style_t style);
+
+    /// @brief Converts a line_style_t value to a Gnuplot-compatible string.
+    /// @param style The line style enumeration.
+    /// @param custom_pattern Optional custom dash pattern (e.g., "10,5,2,5").
+    /// @return Gnuplot-compatible string for the line style.
+    std::string line_style_to_string(line_style_t style, const std::string &custom_pattern = "");
+
+    /// @brief Converts a point_style_t value to a Gnuplot-compatible string.
+    /// @param style The point style enumeration.
+    /// @return Gnuplot-compatible string for the point style.
+    std::string point_style_to_string(point_style_t style = point_style_t::none);
 
     /// @brief pointer to the stream that can be used to write to the pipe
     FILE *gnuplot_pipe;
@@ -622,6 +616,14 @@ private:
     plot_style_t plot_style;
     /// The smoothing style applied to the data (e.g., csplines, bezier).
     smooth_style_t smooth_style;
+    /// @brief Define the line style for Gnuplot plots
+    std::string line_style;
+    /// @brief The line color in Gnuplot-compatible format (e.g., "red", "#ff0000").
+    std::string line_color;
+    /// @brief Specifies the point style.
+    point_style_t point_style;
+    /// @brief Specifies the size of points.
+    double point_size = -1.0;
 
     struct {
         contour_type_t type   = contour_type_t::none;    ///< Default: no contours
