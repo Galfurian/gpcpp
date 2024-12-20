@@ -190,9 +190,9 @@ Gnuplot &Gnuplot::plot_x(const X &x, const std::string &title)
 
     // Create a temporary file for storing the data
     std::ofstream file;
-    std::string name = this->create_tmpfile(file);
-    if (name.empty()) {
-        std::cerr << "Error: Temporary file name is empty. File creation failed." << std::endl;
+    std::string filename = this->create_tmpfile(file);
+    if (filename.empty()) {
+        std::cerr << "Error: Temporary file filename is empty. File creation failed." << std::endl;
         return *this;
     }
 
@@ -200,7 +200,7 @@ Gnuplot &Gnuplot::plot_x(const X &x, const std::string &title)
     for (size_t i = 0; i < x.size(); ++i) {
         if (!(file << x[i] << '\n')) {
             file.close();
-            std::cerr << "Error: Failed to write data to the temporary file: " << name << std::endl;
+            std::cerr << "Error: Failed to write data to the temporary file: " << filename << std::endl;
             return *this;
         }
     }
@@ -209,19 +209,62 @@ Gnuplot &Gnuplot::plot_x(const X &x, const std::string &title)
     file.flush();
     if (file.fail()) {
         file.close();
-        std::cerr << "Error: Failed to flush data to the temporary file: " << name << std::endl;
+        std::cerr << "Error: Failed to flush data to the temporary file: " << filename << std::endl;
         return *this;
     }
     file.close();
 
-    // Pass the temporary file to Gnuplot for plotting
-    this->plotfile_x(name, 1, title);
+    // Check if the file is available for reading.
+    if (!this->file_ready(filename)) {
+        std::cerr << "Error: File " << filename << " is not available for reading." << std::endl;
+        return *this;
+    }
+
+    std::ostringstream oss;
+    // Determine whether to use 'plot' or 'replot' based on the current plot state.
+    oss << ((nplots > 0 && two_dim) ? "replot" : "plot");
+    // Specify the file and columns for the Gnuplot command.
+    oss << " \"" << filename << "\" using 1";
+    // Add a title or specify 'notitle' if no title is provided.
+    oss << (title.empty() ? " notitle " : " title \"" + title + "\"");
+    // Specify the plot style or smoothing option.
+    if (smooth_style == smooth_style_t::none) {
+        oss << " with " << this->plot_style_to_string(plot_style);
+    } else {
+        oss << " smooth " << this->smooth_style_to_string(smooth_style);
+    }
+    // Include line color if it is specified.
+    if (!line_color.empty()) {
+        oss << " lc rgb \"" << line_color << "\"";
+    }
+    // Add line style options only if the plot style supports lines.
+    if (is_line_style(plot_style)) {
+        // Add line width if specified.
+        if (line_width > 0) {
+            oss << " lw " << line_width;
+        }
+        // Add line style if specified.
+        if (!line_style.empty()) {
+            oss << " " << line_style;
+        }
+    }
+    // Add point style and size only if the plot style supports points.
+    if (is_point_style(plot_style)) {
+        // Add point style if specified.
+        oss << " pt " << this->point_style_to_string(point_style);
+        // Add point size if specified.
+        if (point_size > 0) {
+            oss << " ps " << point_size;
+        }
+    }
+    // Send the constructed command to Gnuplot for execution
+    this->send_cmd(oss.str());
 
     return *this;
 }
 
 template <typename X>
-Gnuplot &Gnuplot::plot_x(const std::vector<X> &x, const std::vector<std::string> &titles)
+Gnuplot &Gnuplot::plot_x(const std::vector<X> &datasets, const std::vector<std::string> &titles)
 {
     // Check if the Gnuplot session is ready
     if (!this->is_ready()) {
@@ -230,14 +273,63 @@ Gnuplot &Gnuplot::plot_x(const std::vector<X> &x, const std::vector<std::string>
     }
 
     // Validate input data
-    if (x.empty()) {
-        std::cerr << "Error: Input data is empty. Cannot plot.\n";
+    if (datasets.empty()) {
+        std::cerr << "Error: Input datasets are empty. Cannot plot.\n";
         return *this;
     }
 
-    if (!titles.empty() && titles.size() != x.size()) {
+    if (!titles.empty() && titles.size() != datasets.size()) {
         std::cerr << "Error: Mismatch between the number of datasets and titles.\n";
         return *this;
+    }
+
+    std::vector<std::string> filenames;
+    filenames.reserve(datasets.size());
+
+    // Create temporary files for each dataset
+    for (size_t i = 0; i < datasets.size(); ++i) {
+        if (datasets[i].empty()) {
+            std::cerr << "Error: Dataset " << i + 1 << " is empty. Skipping.\n";
+            continue;
+        }
+
+        std::ofstream file;
+        std::string filename = this->create_tmpfile(file);
+        if (filename.empty()) {
+            std::cerr << "Error: Temporary file creation failed for dataset " << i + 1 << ". Skipping.\n";
+            continue;
+        }
+
+        for (const auto &value : datasets[i]) {
+            if (!(file << value << '\n')) {
+                std::cerr << "Error: Failed to write data to temporary file: " << filename << ". Skipping dataset.\n";
+                file.close();
+                continue;
+            }
+        }
+
+        file.flush();
+        if (file.fail()) {
+            std::cerr << "Error: Failed to flush data to temporary file: " << filename << ". Skipping dataset.\n";
+            file.close();
+            continue;
+        }
+        file.close();
+
+        filenames.push_back(filename);
+    }
+
+    if (filenames.empty()) {
+        std::cerr << "Error: No valid datasets to plot.\n";
+        return *this;
+    }
+
+    // Check if the file is available for reading.
+    for (size_t i = 0; i < filenames.size(); ++i) {
+        if (!this->file_ready(filenames[i])) {
+            std::cerr << "Error: File " << filenames[i] << " is not available for reading.\n";
+            return *this;
+        }
     }
 
     std::ostringstream oss;
@@ -246,24 +338,24 @@ Gnuplot &Gnuplot::plot_x(const std::vector<X> &x, const std::vector<std::string>
     oss << ((nplots > 0 && two_dim) ? "replot " : "plot ");
 
     // Construct the plotting command for each dataset
-    for (size_t k = 0; k < x.size(); ++k) {
-        oss << "'-' using 1"; // Each dataset is sent inline as '-'
+    for (size_t i = 0; i < filenames.size(); ++i) {
+        oss << "\"" << filenames[i] << "\" using 1";
 
         // Add title
-        if (titles.empty() || titles[k].empty()) {
+        if (titles.empty() || titles[i].empty()) {
             oss << " notitle ";
         } else {
-            oss << " title \"" << titles[k] << "\" ";
+            oss << " title \"" << titles[i] << "\" ";
         }
 
-        // Add plot style
+        // Specify plot style or smoothing
         if (smooth_style == smooth_style_t::none) {
-            oss << "with " << this->plot_style_to_string(plot_style);
+            oss << " with " << this->plot_style_to_string(plot_style);
         } else {
-            oss << "smooth " << this->smooth_style_to_string(smooth_style);
+            oss << " smooth " << this->smooth_style_to_string(smooth_style);
         }
 
-        // Add line options (if applicable)
+        // Add line options if applicable
         if (is_line_style(plot_style)) {
             if (line_width > 0) {
                 oss << " lw " << line_width;
@@ -273,30 +365,18 @@ Gnuplot &Gnuplot::plot_x(const std::vector<X> &x, const std::vector<std::string>
             }
         }
 
-        // Add point options (if applicable)
+        // Add point options if applicable
         if (is_point_style(plot_style)) {
-            if (point_style != point_style_t::none) {
-                oss << " pt " << static_cast<int>(point_style);
-            }
+            oss << " pt " << this->point_style_to_string(point_style);
             if (point_size > 0) {
                 oss << " ps " << point_size;
             }
         }
 
         // Add a comma unless it's the last dataset
-        if (k != x.size() - 1) {
+        if (i != filenames.size() - 1) {
             oss << ", ";
         }
-    }
-
-    oss << "\n";
-
-    // Stream data inline for each dataset
-    for (const auto &dataset : x) {
-        for (const auto &value : dataset) {
-            oss << value << '\n';
-        }
-        oss << "e\n"; // End of dataset
     }
 
     // Send the constructed command to Gnuplot
@@ -327,8 +407,8 @@ Gnuplot &Gnuplot::plot_xy(const X &x, const Y &y, const std::string &title)
 
     // Create a temporary file for storing the data
     std::ofstream file;
-    std::string name = this->create_tmpfile(file);
-    if (name.empty()) {
+    std::string filename = this->create_tmpfile(file);
+    if (filename.empty()) {
         std::cerr << "Error: Failed to create a temporary file.\n";
         return *this;
     }
@@ -336,7 +416,7 @@ Gnuplot &Gnuplot::plot_xy(const X &x, const Y &y, const std::string &title)
     // Write the data to the temporary file
     for (size_t i = 0; i < x.size(); ++i) {
         if (!(file << x[i] << " " << y[i] << '\n')) {
-            std::cerr << "Error: Failed to write data to the temporary file: " << name << '\n';
+            std::cerr << "Error: Failed to write data to the temporary file: " << filename << '\n';
             file.close();
             return *this;
         }
@@ -345,20 +425,63 @@ Gnuplot &Gnuplot::plot_xy(const X &x, const Y &y, const std::string &title)
     // Flush the file buffer and close the file
     file.flush();
     if (file.fail()) {
-        std::cerr << "Error: Failed to flush data to the temporary file: " << name << '\n';
+        std::cerr << "Error: Failed to flush data to the temporary file: " << filename << '\n';
         file.close();
         return *this;
     }
     file.close();
 
-    // Pass the temporary file to Gnuplot for plotting
-    this->plotfile_xy(name, 1, 2, title);
+    // Check if the file is available for reading
+    if (!this->file_ready(filename)) {
+        std::cerr << "Error: File " << filename << " is not available for reading.\n";
+        return *this;
+    }
+    std::ostringstream oss;
+    // Determine whether to use 'plot' or 'replot' based on the current plot state
+    oss << ((nplots > 0 && two_dim) ? "replot" : "plot");
+    // Specify the file and columns for the Gnuplot command
+    oss << " \"" << filename << "\" using 1:2";
+    // Add a title or specify 'notitle' if no title is provided
+    oss << (title.empty() ? " notitle " : " title \"" + title + "\"");
+    // Specify the plot style or smoothing option.
+    if (smooth_style == smooth_style_t::none) {
+        oss << " with " << this->plot_style_to_string(plot_style);
+    } else {
+        oss << " smooth " << this->smooth_style_to_string(smooth_style);
+    }
+    // Include line color if it is specified.
+    if (!line_color.empty()) {
+        oss << " lc rgb \"" << line_color << "\"";
+    }
+    // Add line style options only if the plot style supports lines.
+    if (is_line_style(plot_style)) {
+        // Add line width if specified.
+        if (line_width > 0) {
+            oss << " lw " << line_width;
+        }
+        // Add line style if specified.
+        if (!line_style.empty()) {
+            oss << " " << line_style;
+        }
+    }
+    // Add point style and size only if the plot style supports points.
+    if (is_point_style(plot_style)) {
+        // Add point style if specified.
+        oss << " pt " << this->point_style_to_string(point_style);
+        // Add point size if specified.
+        if (point_size > 0) {
+            oss << " ps " << point_size;
+        }
+    }
+    // Send the constructed command to Gnuplot for execution
+    this->send_cmd(oss.str());
 
     return *this;
 }
 
 template <typename X, typename Y, typename E>
-Gnuplot &Gnuplot::plot_xy_err(const X &x, const Y &y, const E &dy, const std::string &title)
+Gnuplot &
+Gnuplot::plot_xy_erorrbar(const X &x, const Y &y, const E &dy, erorrbar_style_t style, const std::string &title)
 {
     // Check if the Gnuplot session is ready
     if (!this->is_ready()) {
@@ -379,8 +502,8 @@ Gnuplot &Gnuplot::plot_xy_err(const X &x, const Y &y, const E &dy, const std::st
 
     // Create a temporary file for storing the data
     std::ofstream file;
-    std::string name = this->create_tmpfile(file);
-    if (name.empty()) {
+    std::string filename = this->create_tmpfile(file);
+    if (filename.empty()) {
         std::cerr << "Error: Failed to create a temporary file.\n";
         return *this;
     }
@@ -388,7 +511,7 @@ Gnuplot &Gnuplot::plot_xy_err(const X &x, const Y &y, const E &dy, const std::st
     // Write the data to the temporary file
     for (size_t i = 0; i < x.size(); ++i) {
         if (!(file << x[i] << " " << y[i] << " " << dy[i] << '\n')) {
-            std::cerr << "Error: Failed to write data to the temporary file: " << name << '\n';
+            std::cerr << "Error: Failed to write data to the temporary file: " << filename << '\n';
             file.close();
             return *this;
         }
@@ -397,14 +520,52 @@ Gnuplot &Gnuplot::plot_xy_err(const X &x, const Y &y, const E &dy, const std::st
     // Flush the file buffer and close the file
     file.flush();
     if (file.fail()) {
-        std::cerr << "Error: Failed to flush data to the temporary file: " << name << '\n';
+        std::cerr << "Error: Failed to flush data to the temporary file: " << filename << '\n';
         file.close();
         return *this;
     }
     file.close();
 
-    // Pass the temporary file to Gnuplot for plotting
-    this->plotfile_xy_err(name, 1, 2, 3, title);
+    // Check if the file is available for reading
+    if (!this->file_ready(filename)) {
+        std::cerr << "Error: File " << filename << " is not available for reading.\n";
+        return *this;
+    }
+
+    std::ostringstream oss;
+
+    // Determine whether to use 'plot' or 'replot' based on the current plot state
+    oss << ((nplots > 0 && two_dim) ? "replot " : "plot ");
+
+    // Specify the file and columns for the Gnuplot command
+    oss << "\"" << filename << "\" using 1:2:3 with " << this->errorbars_to_string(style) << " ";
+
+    // Add a title or specify 'notitle' if no title is provided
+    oss << (title.empty() ? " notitle " : " title \"" + title + "\" ");
+
+    // Include line color if it is specified.
+    if (!line_color.empty()) {
+        oss << " lc rgb \"" << line_color << "\"";
+    }
+
+    // Add line width if specified.
+    if (line_width > 0) {
+        oss << " lw " << line_width;
+    }
+    // Add line style if specified.
+    if (!line_style.empty()) {
+        oss << " " << line_style;
+    }
+
+    // Add point style if specified.
+    oss << " pt " << this->point_style_to_string(point_style);
+    // Add point size if specified.
+    if (point_size > 0) {
+        oss << " ps " << point_size;
+    }
+
+    // Send the constructed command to Gnuplot for execution
+    this->send_cmd(oss.str());
 
     return *this;
 }
@@ -431,8 +592,8 @@ Gnuplot &Gnuplot::plot_xyz(const X &x, const Y &y, const Z &z, const std::string
 
     // Create a temporary file for storing the data
     std::ofstream file;
-    std::string name = this->create_tmpfile(file);
-    if (name.empty()) {
+    std::string filename = this->create_tmpfile(file);
+    if (filename.empty()) {
         std::cerr << "Error: Failed to create a temporary file.\n";
         return *this;
     }
@@ -440,7 +601,7 @@ Gnuplot &Gnuplot::plot_xyz(const X &x, const Y &y, const Z &z, const std::string
     // Write the data to the temporary file
     for (size_t i = 0; i < x.size(); ++i) {
         if (!(file << x[i] << " " << y[i] << " " << z[i] << '\n')) {
-            std::cerr << "Error: Failed to write data to the temporary file: " << name << '\n';
+            std::cerr << "Error: Failed to write data to the temporary file: " << filename << '\n';
             file.close();
             return *this;
         }
@@ -449,14 +610,65 @@ Gnuplot &Gnuplot::plot_xyz(const X &x, const Y &y, const Z &z, const std::string
     // Flush the file buffer and close the file
     file.flush();
     if (file.fail()) {
-        std::cerr << "Error: Failed to flush data to the temporary file: " << name << '\n';
+        std::cerr << "Error: Failed to flush data to the temporary file: " << filename << '\n';
         file.close();
         return *this;
     }
     file.close();
 
-    // Pass the temporary file to Gnuplot for plotting
-    this->plotfile_xyz(name, 1, 2, 3, title);
+    // Check if the file is available for reading
+    if (!this->file_ready(filename)) {
+        std::cerr << "Error: File " << filename << " is not available for reading.\n";
+        return *this;
+    }
+
+    std::ostringstream oss;
+
+    // Determine whether to use 'splot' or 'replot' based on the current plot state
+    oss << ((nplots > 0 && !two_dim) ? "replot" : "splot");
+
+    // Specify the file and columns for the Gnuplot command
+    oss << " \"" << filename << "\" using 1:2:3";
+
+    // Add a title or specify 'notitle' if no title is provided
+    oss << (title.empty() ? " notitle" : " title \"" + title + "\"");
+
+    // Specify the plot style or smoothing option.
+    if (smooth_style == smooth_style_t::none) {
+        oss << " with " << this->plot_style_to_string(plot_style);
+    } else {
+        oss << " smooth " << this->smooth_style_to_string(smooth_style);
+    }
+
+    // Include line color if it is specified.
+    if (!line_color.empty()) {
+        oss << " lc rgb \"" << line_color << "\"";
+    }
+
+    // Add line style options only if the plot style supports lines.
+    if (is_line_style(plot_style)) {
+        // Add line width if specified.
+        if (line_width > 0) {
+            oss << " lw " << line_width;
+        }
+        // Add line style if specified.
+        if (!line_style.empty()) {
+            oss << " " << line_style;
+        }
+    }
+
+    // Add point style and size only if the plot style supports points.
+    if (is_point_style(plot_style)) {
+        // Add point style if specified.
+        oss << " pt " << this->point_style_to_string(point_style);
+        // Add point size if specified.
+        if (point_size > 0) {
+            oss << " ps " << point_size;
+        }
+    }
+
+    // Send the constructed command to Gnuplot for execution
+    this->send_cmd(oss.str());
 
     return *this;
 }
@@ -482,8 +694,8 @@ Gnuplot &Gnuplot::plot_3d_grid(const X &x, const Y &y, const Z &z, const std::st
 
     // Create a temporary file for storing the grid data
     std::ofstream file;
-    std::string name = this->create_tmpfile(file);
-    if (name.empty()) {
+    std::string filename = this->create_tmpfile(file);
+    if (filename.empty()) {
         std::cerr << "Error: Failed to create a temporary file.\n";
         return *this;
     }
@@ -492,7 +704,7 @@ Gnuplot &Gnuplot::plot_3d_grid(const X &x, const Y &y, const Z &z, const std::st
     for (size_t i = 0; i < x.size(); ++i) {
         for (size_t j = 0; j < y.size(); ++j) {
             if (!(file << x[i] << " " << y[j] << " " << z[i][j] << '\n')) {
-                std::cerr << "Error: Failed to write data to the temporary file: " << name << '\n';
+                std::cerr << "Error: Failed to write data to the temporary file: " << filename << '\n';
                 file.close();
                 return *this;
             }
@@ -503,15 +715,282 @@ Gnuplot &Gnuplot::plot_3d_grid(const X &x, const Y &y, const Z &z, const std::st
     // Flush and close the file
     file.flush();
     if (file.fail()) {
-        std::cerr << "Error: Failed to flush data to the temporary file: " << name << '\n';
+        std::cerr << "Error: Failed to flush data to the temporary file: " << filename << '\n';
         file.close();
         return *this;
     }
     file.close();
 
-    // Pass the temporary file to Gnuplot for plotting
-    this->plotfile_xyz(name, 1, 2, 3, title);
+    // Check if the file is available for reading
+    if (!this->file_ready(filename)) {
+        std::cerr << "Error: File " << filename << " is not available for reading.\n";
+        return *this;
+    }
 
+    std::ostringstream oss;
+
+    // Determine whether to use 'splot' or 'replot' based on the current plot state
+    oss << ((nplots > 0 && !two_dim) ? "replot" : "splot");
+
+    // Specify the file and columns for the Gnuplot command
+    oss << " \"" << filename << "\" using 1:2:3";
+
+    // Add a title or specify 'notitle' if no title is provided
+    oss << (title.empty() ? " notitle" : " title \"" + title + "\"");
+
+    // Specify the plot style or smoothing option.
+    if (smooth_style == smooth_style_t::none) {
+        oss << " with " << this->plot_style_to_string(plot_style);
+    } else {
+        oss << " smooth " << this->smooth_style_to_string(smooth_style);
+    }
+
+    // Include line color if it is specified.
+    if (!line_color.empty()) {
+        oss << " lc rgb \"" << line_color << "\"";
+    }
+
+    // Add line style options only if the plot style supports lines.
+    if (is_line_style(plot_style)) {
+        // Add line width if specified.
+        if (line_width > 0) {
+            oss << " lw " << line_width;
+        }
+        // Add line style if specified.
+        if (!line_style.empty()) {
+            oss << " " << line_style;
+        }
+    }
+
+    // Add point style and size only if the plot style supports points.
+    if (is_point_style(plot_style)) {
+        // Add point style if specified.
+        oss << " pt " << this->point_style_to_string(point_style);
+        // Add point size if specified.
+        if (point_size > 0) {
+            oss << " ps " << point_size;
+        }
+    }
+
+    // Send the constructed command to Gnuplot for execution
+    this->send_cmd(oss.str());
+    return *this;
+}
+
+Gnuplot &Gnuplot::plot_slope(const double a, const double b, const std::string &title)
+{
+    std::ostringstream oss;
+
+    // Determine whether to use 'plot' or 'replot' based on the current plot state.
+    oss << ((nplots > 0 && two_dim) ? "replot " : "plot ");
+
+    // Add the equation for the slope to the plot command.
+    oss << " " << a << " * x + " << b << " ";
+
+    // Specify the equation and title for the plot.
+    if (title.empty()) {
+        oss << "title \"f(x) = " << a << " * x + " << b << "\"";
+    } else {
+        oss << "title \"" << title << "\"";
+    }
+
+    // Specify the plot style or smoothing option.
+    if (smooth_style == smooth_style_t::none) {
+        oss << " with " << this->plot_style_to_string(plot_style);
+    } else {
+        oss << " smooth " << this->smooth_style_to_string(smooth_style);
+    }
+
+    // Include line color if it is specified.
+    if (!line_color.empty()) {
+        oss << " lc rgb \"" << line_color << "\"";
+    }
+
+    // Add line style options only if the plot style supports lines.
+    if (is_line_style(plot_style)) {
+        // Add line width if specified.
+        if (line_width > 0) {
+            oss << " lw " << line_width;
+        }
+        // Add line style if specified.
+        if (!line_style.empty()) {
+            oss << " " << line_style;
+        }
+    }
+
+    // Add point style and size only if the plot style supports points.
+    if (is_point_style(plot_style)) {
+        // Add point style if specified.
+        oss << " pt " << this->point_style_to_string(point_style);
+        // Add point size if specified.
+        if (point_size > 0) {
+            oss << " ps " << point_size;
+        }
+    }
+
+    // Send the constructed command to Gnuplot for execution
+    this->send_cmd(oss.str());
+
+    return *this;
+}
+
+Gnuplot &Gnuplot::plot_equation(const std::string &equation, const std::string &title)
+{
+    std::ostringstream oss;
+
+    // Determine whether to use 'plot' or 'replot' based on the current state.
+    oss << ((nplots > 0 && two_dim) ? "replot " : "plot ");
+
+    // Add the equation to be plotted.
+    oss << equation;
+
+    // Set the title or use 'notitle' if no title is provided.
+    oss << (title.empty() ? " notitle" : " title \"" + title + "\"");
+
+    // Specify the plot style or smoothing option.
+    if (smooth_style == smooth_style_t::none) {
+        oss << " with " << this->plot_style_to_string(plot_style);
+    } else {
+        oss << " smooth " << this->smooth_style_to_string(smooth_style);
+    }
+
+    // Include line color if it is specified.
+    if (!line_color.empty()) {
+        oss << " lc rgb \"" << line_color << "\"";
+    }
+
+    // Add line style options only if the plot style supports lines.
+    if (is_line_style(plot_style)) {
+        // Add line width if specified.
+        if (line_width > 0) {
+            oss << " lw " << line_width;
+        }
+        // Add line style if specified.
+        if (!line_style.empty()) {
+            oss << " " << line_style;
+        }
+    }
+
+    // Add point style and size only if the plot style supports points.
+    if (is_point_style(plot_style)) {
+        // Add point style if specified.
+        oss << " pt " << this->point_style_to_string(point_style);
+        // Add point size if specified.
+        if (point_size > 0) {
+            oss << " ps " << point_size;
+        }
+    }
+
+    // Send the constructed command to Gnuplot for execution.
+    this->send_cmd(oss.str());
+    return *this;
+}
+
+Gnuplot &Gnuplot::plot_equation3d(const std::string &equation, const std::string &title)
+{
+    std::ostringstream oss;
+
+    // Determine whether to use 'splot' or 'replot' based on the current state.
+    oss << ((nplots > 0 && !two_dim) ? "replot " : "splot ");
+
+    // Add the equation.
+    oss << equation;
+
+    // Add the title or use a default title format.
+    if (title.empty()) {
+        oss << " title \"f(x, y) = " << equation << "\"";
+    } else {
+        oss << " title \"" << title << "\"";
+    }
+
+    // Specify the plot style or smoothing option.
+    if (smooth_style == smooth_style_t::none) {
+        oss << " with " << this->plot_style_to_string(plot_style);
+    } else {
+        oss << " smooth " << this->smooth_style_to_string(smooth_style);
+    }
+
+    // Include line color if it is specified.
+    if (!line_color.empty()) {
+        oss << " lc rgb \"" << line_color << "\"";
+    }
+
+    // Add line style options only if the plot style supports lines.
+    if (is_line_style(plot_style)) {
+        // Add line width if specified.
+        if (line_width > 0) {
+            oss << " lw " << line_width;
+        }
+        // Add line style if specified.
+        if (!line_style.empty()) {
+            oss << " " << line_style;
+        }
+    }
+
+    // Add point style and size only if the plot style supports points.
+    if (is_point_style(plot_style)) {
+        // Add point style if specified.
+        oss << " pt " << this->point_style_to_string(point_style);
+        // Add point size if specified.
+        if (point_size > 0) {
+            oss << " ps " << point_size;
+        }
+    }
+
+    // Send the constructed command to Gnuplot for execution.
+    this->send_cmd(oss.str());
+    return *this;
+}
+
+Gnuplot &Gnuplot::plot_image(const unsigned char *ucPicBuf,
+                             const unsigned int iWidth,
+                             const unsigned int iHeight,
+                             const std::string &title)
+{
+    // Create a temporary file to store image data
+    std::ofstream file;
+    std::string filename = create_tmpfile(file);
+    if (filename.empty()) {
+        std::cerr << "Error: Failed to create a temporary file for image plotting." << std::endl;
+        return *this; // Early return on failure
+    }
+
+    // Write the image data (width, height, pixel value) to the temporary file
+    int iIndex         = 0;
+    bool write_success = true;
+    for (unsigned int iRow = 0; iRow < iHeight && write_success; ++iRow) {
+        for (unsigned int iColumn = 0; iColumn < iWidth; ++iColumn) {
+            if (!(file << iColumn << " " << iRow << " " << static_cast<float>(ucPicBuf[iIndex++]) << std::endl)) {
+                std::cerr << "Error: Failed to write image data to temporary file: " << filename << std::endl;
+                write_success = false;
+                break;
+            }
+        }
+    }
+
+    // Ensure all data is written to the file and the file is closed properly
+    file.flush();
+    if (file.fail() || !write_success) {
+        file.close();
+        std::cerr << "Error: Failed to flush data to temporary file: " << filename << std::endl;
+        return *this; // Early return on failure
+    }
+    file.close();
+
+    // Check if the file is available for reading
+    if (this->file_ready(filename)) {
+        // Construct the Gnuplot command for plotting the image
+        std::ostringstream oss;
+        // Determine whether to use 'plot' or 'replot' based on the current plot state
+        oss << ((nplots > 0 && two_dim) ? "replot " : "plot ");
+        // Specify the file and plotting options
+        oss << "\"" << filename << "\" with image";
+        if (!title.empty()) {
+            oss << " title \"" << title << "\"";
+        }
+        // Send the constructed command to Gnuplot for execution
+        this->send_cmd(oss.str());
+    }
     return *this;
 }
 
@@ -950,372 +1429,6 @@ Gnuplot &Gnuplot::set_cbrange(const double iFrom, const double iTo)
     return *this;
 }
 
-Gnuplot &Gnuplot::plot_slope(const double a, const double b, const std::string &title)
-{
-    std::ostringstream oss;
-
-    // Determine whether to use 'plot' or 'replot' based on the current plot state.
-    oss << ((nplots > 0 && two_dim) ? "replot " : "plot ");
-
-    // Specify the equation and title for the plot.
-    if (title == "") {
-        oss << "title \"f(x) = " << a << " * x + " << b << "\"";
-    } else {
-        oss << "title \"" << title << "\"";
-    }
-
-    // Specify the plot style or smoothing option.
-    if (smooth_style == smooth_style_t::none) {
-        oss << " with " << this->plot_style_to_string(plot_style);
-    } else {
-        oss << " smooth " << this->smooth_style_to_string(smooth_style);
-    }
-    // Include line color if it is specified.
-    if (!line_color.empty()) {
-        oss << " lc rgb \"" << line_color << "\"";
-    }
-    // Add line style options only if the plot style supports lines.
-    if (is_line_style(plot_style)) {
-        // Add line width if specified.
-        if (line_width > 0) {
-            oss << " lw " << line_width;
-        }
-        // Add line style if specified.
-        if (!line_style.empty()) {
-            oss << " " << line_style;
-        }
-    }
-    // Add point style and size only if the plot style supports points.
-    if (is_point_style(plot_style)) {
-        // Add point style if specified.
-        oss << " pt " << this->point_style_to_string(point_style);
-        // Add point size if specified.
-        if (point_size > 0) {
-            oss << " ps " << point_size;
-        }
-    }
-
-    //
-    // Do the actual plot
-    //
-    this->send_cmd(oss.str());
-
-    return *this;
-}
-
-Gnuplot &Gnuplot::plot_equation(const std::string &equation, const std::string &title)
-{
-    std::ostringstream oss;
-    // Determine whether to use 'plot' or 'replot' based on the current state.
-    oss << ((nplots > 0 && two_dim) ? "replot " : "plot ");
-    // Add the equation to be plotted.
-    oss << equation;
-    // Set the title or use 'notitle' if no title is provided.
-    oss << (title.empty() ? " notitle" : " title \"" + title + "\"");
-    // Specify the plot style or smoothing option.
-    if (smooth_style == smooth_style_t::none) {
-        oss << " with " << this->plot_style_to_string(plot_style);
-    } else {
-        oss << " smooth " << this->smooth_style_to_string(smooth_style);
-    }
-    // Include line color if it is specified.
-    if (!line_color.empty()) {
-        oss << " lc rgb \"" << line_color << "\"";
-    }
-    // Add line style options only if the plot style supports lines.
-    if (is_line_style(plot_style)) {
-        // Add line width if specified.
-        if (line_width > 0) {
-            oss << " lw " << line_width;
-        }
-        // Add line style if specified.
-        if (!line_style.empty()) {
-            oss << " " << line_style;
-        }
-    }
-    // Add point style and size only if the plot style supports points.
-    if (is_point_style(plot_style)) {
-        // Add point style if specified.
-        oss << " pt " << this->point_style_to_string(point_style);
-        // Add point size if specified.
-        if (point_size > 0) {
-            oss << " ps " << point_size;
-        }
-    }
-    // Send the constructed command to Gnuplot for execution.
-    this->send_cmd(oss.str());
-    return *this;
-}
-
-Gnuplot &Gnuplot::plot_equation3d(const std::string &equation, const std::string &title)
-{
-    std::ostringstream oss;
-    // Determine whether to use 'splot' or 'replot' based on the current state.
-    oss << ((nplots > 0 && !two_dim) ? "replot " : "splot ");
-    // Add the equation.
-    oss << equation;
-    // Add the title or use a default title format.
-    if (title.empty()) {
-        oss << " title \"f(x, y) = " << equation << "\"";
-    } else {
-        oss << " title \"" << title << "\"";
-    }
-    // Specify the plot style or smoothing option.
-    if (smooth_style == smooth_style_t::none) {
-        oss << " with " << this->plot_style_to_string(plot_style);
-    } else {
-        oss << " smooth " << this->smooth_style_to_string(smooth_style);
-    }
-    // Include line color if it is specified.
-    if (!line_color.empty()) {
-        oss << " lc rgb \"" << line_color << "\"";
-    }
-    // Add line style options only if the plot style supports lines.
-    if (is_line_style(plot_style)) {
-        // Add line width if specified.
-        if (line_width > 0) {
-            oss << " lw " << line_width;
-        }
-        // Add line style if specified.
-        if (!line_style.empty()) {
-            oss << " " << line_style;
-        }
-    }
-    // Add point style and size only if the plot style supports points.
-    if (is_point_style(plot_style)) {
-        // Add point style if specified.
-        oss << " pt " << this->point_style_to_string(point_style);
-        // Add point size if specified.
-        if (point_size > 0) {
-            oss << " ps " << point_size;
-        }
-    }
-    // Send the constructed command to Gnuplot for execution.
-    this->send_cmd(oss.str());
-    return *this;
-}
-
-Gnuplot &Gnuplot::plotfile_x(const std::string &filename, const unsigned int column, const std::string &title)
-{
-    // Check if the file is available for reading
-    if (this->file_ready(filename)) {
-        std::ostringstream oss;
-        // Determine whether to use 'plot' or 'replot' based on the current plot state.
-        oss << ((nplots > 0 && two_dim) ? "replot" : "plot");
-        // Specify the file and columns for the Gnuplot command.
-        oss << " \"" << filename << "\" using " << column;
-        // Add a title or specify 'notitle' if no title is provided.
-        oss << (title.empty() ? " notitle " : " title \"" + title + "\"");
-        // Specify the plot style or smoothing option.
-        if (smooth_style == smooth_style_t::none) {
-            oss << " with " << this->plot_style_to_string(plot_style);
-        } else {
-            oss << " smooth " << this->smooth_style_to_string(smooth_style);
-        }
-        // Include line color if it is specified.
-        if (!line_color.empty()) {
-            oss << " lc rgb \"" << line_color << "\"";
-        }
-        // Add line style options only if the plot style supports lines.
-        if (is_line_style(plot_style)) {
-            // Add line width if specified.
-            if (line_width > 0) {
-                oss << " lw " << line_width;
-            }
-            // Add line style if specified.
-            if (!line_style.empty()) {
-                oss << " " << line_style;
-            }
-        }
-        // Add point style and size only if the plot style supports points.
-        if (is_point_style(plot_style)) {
-            // Add point style if specified.
-            oss << " pt " << this->point_style_to_string(point_style);
-            // Add point size if specified.
-            if (point_size > 0) {
-                oss << " ps " << point_size;
-            }
-        }
-        // Send the constructed command to Gnuplot for execution
-        this->send_cmd(oss.str());
-    }
-    return *this;
-}
-
-Gnuplot &Gnuplot::plotfile_xy(const std::string &filename,
-                              const unsigned int column_x,
-                              const unsigned int column_y,
-                              const std::string &title)
-{
-    // Check if the file is available for reading
-    if (this->file_ready(filename)) {
-        std::ostringstream oss;
-        // Determine whether to use 'plot' or 'replot' based on the current plot state
-        oss << ((nplots > 0 && two_dim) ? "replot" : "plot");
-        // Specify the file and columns for the Gnuplot command
-        oss << " \"" << filename << "\" using " << column_x << ":" << column_y;
-        // Add a title or specify 'notitle' if no title is provided
-        oss << (title.empty() ? " notitle " : " title \"" + title + "\"");
-        // Specify the plot style or smoothing option.
-        if (smooth_style == smooth_style_t::none) {
-            oss << " with " << this->plot_style_to_string(plot_style);
-        } else {
-            oss << " smooth " << this->smooth_style_to_string(smooth_style);
-        }
-        // Include line color if it is specified.
-        if (!line_color.empty()) {
-            oss << " lc rgb \"" << line_color << "\"";
-        }
-        // Add line style options only if the plot style supports lines.
-        if (is_line_style(plot_style)) {
-            // Add line width if specified.
-            if (line_width > 0) {
-                oss << " lw " << line_width;
-            }
-            // Add line style if specified.
-            if (!line_style.empty()) {
-                oss << " " << line_style;
-            }
-        }
-        // Add point style and size only if the plot style supports points.
-        if (is_point_style(plot_style)) {
-            // Add point style if specified.
-            oss << " pt " << this->point_style_to_string(point_style);
-            // Add point size if specified.
-            if (point_size > 0) {
-                oss << " ps " << point_size;
-            }
-        }
-        // Send the constructed command to Gnuplot for execution
-        this->send_cmd(oss.str());
-    }
-    return *this;
-}
-
-Gnuplot &Gnuplot::plotfile_xy_err(const std::string &filename,
-                                  const unsigned int column_x,
-                                  const unsigned int column_y,
-                                  const unsigned int column_dy,
-                                  const std::string &title)
-{
-    // Check if the file is available for reading
-    if (this->file_ready(filename)) {
-        std::ostringstream oss;
-        // Determine whether to use 'plot' or 'replot' based on the current plot state
-        oss << ((nplots > 0 && two_dim) ? "replot " : "plot ");
-        // Specify the file and columns for the Gnuplot command
-        oss << "\"" << filename << "\" using " << column_x << ":" << column_y << ":" << column_dy << " with errorbars ";
-        // Add a title or specify 'notitle' if no title is provided
-        oss << (title.empty() ? " notitle " : " title \"" + title + "\" ");
-        // Send the constructed command to Gnuplot for execution
-        this->send_cmd(oss.str());
-    }
-    return *this;
-}
-
-Gnuplot &Gnuplot::plotfile_xyz(const std::string &filename,
-                               const unsigned int column_x,
-                               const unsigned int column_y,
-                               const unsigned int column_z,
-                               const std::string &title)
-{
-    // Check if the file is available for reading
-    if (this->file_ready(filename)) {
-        std::ostringstream oss;
-        // Determine whether to use 'splot' or 'replot' based on the current plot state
-        oss << ((nplots > 0 && !two_dim) ? "replot" : "splot");
-        // Specify the file and columns for the Gnuplot command
-        oss << " \"" << filename << "\" using " << column_x << ":" << column_y << ":" << column_z;
-        // Add a title or specify 'notitle' if no title is provided
-        oss << (title.empty() ? " notitle" : " title \"" + title + "\"");
-        // Specify the plot style or smoothing option.
-        if (smooth_style == smooth_style_t::none) {
-            oss << " with " << this->plot_style_to_string(plot_style);
-        } else {
-            oss << " smooth " << this->smooth_style_to_string(smooth_style);
-        }
-        // Include line color if it is specified.
-        if (!line_color.empty()) {
-            oss << " lc rgb \"" << line_color << "\"";
-        }
-        // Add line style options only if the plot style supports lines.
-        if (is_line_style(plot_style)) {
-            // Add line width if specified.
-            if (line_width > 0) {
-                oss << " lw " << line_width;
-            }
-            // Add line style if specified.
-            if (!line_style.empty()) {
-                oss << " " << line_style;
-            }
-        }
-        // Add point style and size only if the plot style supports points.
-        if (is_point_style(plot_style)) {
-            // Add point style if specified.
-            oss << " pt " << this->point_style_to_string(point_style);
-            // Add point size if specified.
-            if (point_size > 0) {
-                oss << " ps " << point_size;
-            }
-        }
-        // Send the constructed command to Gnuplot for execution
-        this->send_cmd(oss.str());
-    }
-    return *this;
-}
-
-Gnuplot &Gnuplot::plot_image(const unsigned char *ucPicBuf,
-                             const unsigned int iWidth,
-                             const unsigned int iHeight,
-                             const std::string &title)
-{
-    // Create a temporary file to store image data
-    std::ofstream file;
-    std::string filename = create_tmpfile(file);
-    if (filename.empty()) {
-        std::cerr << "Error: Failed to create a temporary file for image plotting." << std::endl;
-        return *this; // Early return on failure
-    }
-
-    // Write the image data (width, height, pixel value) to the temporary file
-    int iIndex         = 0;
-    bool write_success = true;
-    for (unsigned int iRow = 0; iRow < iHeight && write_success; ++iRow) {
-        for (unsigned int iColumn = 0; iColumn < iWidth; ++iColumn) {
-            if (!(file << iColumn << " " << iRow << " " << static_cast<float>(ucPicBuf[iIndex++]) << std::endl)) {
-                std::cerr << "Error: Failed to write image data to temporary file: " << filename << std::endl;
-                write_success = false;
-                break;
-            }
-        }
-    }
-
-    // Ensure all data is written to the file and the file is closed properly
-    file.flush();
-    if (file.fail() || !write_success) {
-        file.close();
-        std::cerr << "Error: Failed to flush data to temporary file: " << filename << std::endl;
-        return *this; // Early return on failure
-    }
-    file.close();
-
-    // Check if the file is available for reading
-    if (this->file_ready(filename)) {
-        // Construct the Gnuplot command for plotting the image
-        std::ostringstream oss;
-        // Determine whether to use 'plot' or 'replot' based on the current plot state
-        oss << ((nplots > 0 && two_dim) ? "replot " : "plot ");
-        // Specify the file and plotting options
-        oss << "\"" << filename << "\" with image";
-        if (!title.empty()) {
-            oss << " title \"" << title << "\"";
-        }
-        // Send the constructed command to Gnuplot for execution
-        this->send_cmd(oss.str());
-    }
-    return *this;
-}
-
 bool Gnuplot::get_program_path()
 {
     // Check the first location: `m_gnuplot_path`
@@ -1556,6 +1669,18 @@ std::string Gnuplot::line_style_to_string(line_style_t style, const std::string 
 std::string Gnuplot::point_style_to_string(point_style_t style)
 {
     return std::to_string(static_cast<int>(style));
+}
+
+std::string Gnuplot::errorbars_to_string(erorrbar_style_t style)
+{
+    switch (style) {
+    case erorrbar_style_t::yerrorbars:
+        return "yerrorbars";
+    case erorrbar_style_t::xerrorbars:
+        return "xerrorbars";
+    default:
+        return "yerrorbars";
+    }
 }
 
 void Gnuplot::remove_tmpfiles()

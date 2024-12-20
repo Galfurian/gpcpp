@@ -47,6 +47,11 @@ enum class plot_style_t {
     histograms,    ///< Histograms.
 };
 
+enum class erorrbar_style_t {
+    yerrorbars, ///< Error bars along the y-axis.
+    xerrorbars, ///< Error bars along the x-axis.
+};
+
 /// @brief Enum representing the smoothing styles available in Gnuplot.
 enum class smooth_style_t {
     none,      ///< No smoothing (default).
@@ -381,13 +386,6 @@ public:
     /// @return A reference to the current Gnuplot object.
     Gnuplot &set_cbrange(const double iFrom, const double iTo);
 
-    /// @brief Plots data from a file as a single vector.
-    /// @param filename The name of the file containing the data.
-    /// @param column The column in the file to plot (default is 1).
-    /// @param title The title of the plot (default is an empty string).
-    /// @return A reference to the current Gnuplot object.
-    Gnuplot &plotfile_x(const std::string &filename, const unsigned int column = 1, const std::string &title = "");
-
     /// @brief Plots a single vector of data.
     /// @tparam X The type of the data in the vector.
     /// @param x The data to plot.
@@ -398,22 +396,11 @@ public:
 
     /// @brief Plots multiple vectors with separate titles.
     /// @tparam X The type of the data in the vectors.
-    /// @param x The vectors of data to plot.
+    /// @param datasets The vectors of datasets to plot.
     /// @param titles The titles for each vector.
     /// @return A reference to the current Gnuplot object.
     template <typename X>
-    Gnuplot &plot_x(const std::vector<X> &x, const std::vector<std::string> &titles);
-
-    /// @brief Plots x, y pairs of data from a file.
-    /// @param filename The name of the file containing the data.
-    /// @param column_x The column for the x values (default is 1).
-    /// @param column_y The column for the y values (default is 2).
-    /// @param title The title of the plot (default is an empty string).
-    /// @return A reference to the current Gnuplot object.
-    Gnuplot &plotfile_xy(const std::string &filename,
-                         const unsigned int column_x = 1,
-                         const unsigned int column_y = 2,
-                         const std::string &title    = "");
+    Gnuplot &plot_x(const std::vector<X> &datasets, const std::vector<std::string> &titles);
 
     /// @brief Plots x, y pairs of data.
     /// @tparam X The type of the x data.
@@ -425,19 +412,6 @@ public:
     template <typename X, typename Y>
     Gnuplot &plot_xy(const X &x, const Y &y, const std::string &title = "");
 
-    /// @brief Plots x, y pairs with error bars (x, y, dy) from a file.
-    /// @param filename The name of the file containing the data.
-    /// @param column_x The column for the x values (default is 1).
-    /// @param column_y The column for the y values (default is 2).
-    /// @param column_dy The column for the error values (default is 3).
-    /// @param title The title of the plot (default is an empty string).
-    /// @return A reference to the current Gnuplot object.
-    Gnuplot &plotfile_xy_err(const std::string &filename,
-                             const unsigned int column_x  = 1,
-                             const unsigned int column_y  = 2,
-                             const unsigned int column_dy = 3,
-                             const std::string &title     = "");
-
     /// @brief Plots x, y pairs with error bars (x, y, dy).
     /// @tparam X The type of the x data.
     /// @tparam Y The type of the y data.
@@ -445,23 +419,15 @@ public:
     /// @param x The x values.
     /// @param y The y values.
     /// @param dy The error values.
+    /// @param style The error bar style (default is errorbars).
     /// @param title The title of the plot (default is an empty string).
     /// @return A reference to the current Gnuplot object.
     template <typename X, typename Y, typename E>
-    Gnuplot &plot_xy_err(const X &x, const Y &y, const E &dy, const std::string &title = "");
-
-    /// @brief Plots x, y, z triples of data from a file.
-    /// @param filename The name of the file containing the data.
-    /// @param column_x The column for the x values (default is 1).
-    /// @param column_y The column for the y values (default is 2).
-    /// @param column_z The column for the z values (default is 3).
-    /// @param title The title of the plot (default is an empty string).
-    /// @return A reference to the current Gnuplot object.
-    Gnuplot &plotfile_xyz(const std::string &filename,
-                          const unsigned int column_x = 1,
-                          const unsigned int column_y = 2,
-                          const unsigned int column_z = 3,
-                          const std::string &title    = "");
+    Gnuplot &plot_xy_erorrbar(const X &x,
+                              const Y &y,
+                              const E &dy,
+                              erorrbar_style_t style   = erorrbar_style_t::yerrorbars,
+                              const std::string &title = "");
 
     /// @brief Plots x, y, z triples of data.
     /// @tparam X The type of the x data.
@@ -600,6 +566,11 @@ private:
     /// @param style The point style enumeration.
     /// @return Gnuplot-compatible string for the point style.
     std::string point_style_to_string(point_style_t style = point_style_t::none);
+
+    /// @brief Converts an erorrbar_style_t value to a Gnuplot-compatible string.
+    /// @param style The error bar style enumeration.
+    /// @return Gnuplot-compatible string for the error bar style.
+    std::string errorbars_to_string(erorrbar_style_t style = erorrbar_style_t::yerrorbars);
 
     /// @brief pointer to the stream that can be used to write to the pipe
     FILE *gnuplot_pipe;

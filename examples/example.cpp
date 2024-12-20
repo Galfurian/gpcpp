@@ -30,16 +30,35 @@ int main(int, char *[])
 {
     using namespace gnuplotcpp;
 
+#if 0
     // Initialize gnuplot.
     Gnuplot gnuplot;
-    if (!gnuplot.is_ready()) {
-        std::cerr << "Failed to initialize Gnuplot session.\n";
-        return 1;
-    }
     // Plot the data with a title.
-    gnuplot.set_line_color("red").plot_equation("sin(x)", "sine");
+    gnuplot.set_line_color("red").plot_slope(1, 2.5, "sine");
     // Pause for the user to view.
     wait_for_key();
+#endif
+
+#if 1
+    std::vector<double> x, y, dy;
+    for (unsigned int i = 0; i < 50; i++) {
+        x.push_back((double)i);                           // x[i] = i
+        y.push_back((double)i * (double)i);               // y[i] = i^2
+        dy.push_back((double)i * (double)i / (double)10); // dy[i] = i^2 / 10
+    }
+    // Initialize gnuplot.
+    Gnuplot gnuplot;
+    // Plot the data with a title.
+    gnuplot.set_plot_style(plot_style_t::lines)
+        .set_line_width(2.0)
+        .plot_xy(x, y)
+        .set_point_style(point_style_t::filled_square)
+        .set_line_style(line_style_t::dashed)
+        .set_line_color("blue")
+        .plot_xy_erorrbar(x, y, dy, erorrbar_style_t::yerrorbars, "x^2");
+    // Pause for the user to view.
+    wait_for_key();
+#endif
 
     // {
     //     // Initialize Gnuplot
