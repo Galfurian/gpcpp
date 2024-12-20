@@ -1142,29 +1142,59 @@ Gnuplot &Gnuplot::savetofigure(const std::string filename, const std::string ter
     return *this;
 }
 
-Gnuplot &Gnuplot::set_legend(const std::string &position)
+Gnuplot &Gnuplot::set_legend(const std::string &position,
+                             const std::string &font,
+                             const std::string &title,
+                             bool with_box,
+                             double spacing,
+                             double width)
 {
+    if (position.empty()) {
+        this->send_cmd("unset key");
+        return *this;
+    }
+
     std::ostringstream oss;
+
+    // Set the legend position.
     oss << "set key " << position;
 
+    // Set the legend title, if provided.
+    if (!title.empty()) {
+        oss << " title \"" << title << "\"";
+    }
+
+    // Set the font, if provided.
+    if (!font.empty()) {
+        oss << " font \"" << font << "\"";
+    }
+
+    // Add box around the legend if specified.
+    if (with_box) {
+        oss << " box";
+    } else {
+        oss << " nobox";
+    }
+
+    // Set the spacing between legend items if specified.
+    if (spacing > 0) {
+        oss << " spacing " << spacing;
+    }
+
+    // Set the width of the legend box.
+    if (width > 0) {
+        oss << " width " << width;
+    }
+
+    // Send the command to Gnuplot
     this->send_cmd(oss.str());
 
     return *this;
 }
 
-Gnuplot &Gnuplot::unset_legend()
-{
-    this->send_cmd("unset key");
-    return *this;
-}
-
 Gnuplot &Gnuplot::set_title(const std::string &title)
 {
-    std::string cmdstr;
-    cmdstr = "set title \"";
-    cmdstr += title;
-    cmdstr += "\"";
-    *this << cmdstr;
+    *this << "set title \"" << title << "\"";
     return *this;
 }
 

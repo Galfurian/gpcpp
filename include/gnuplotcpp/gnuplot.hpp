@@ -276,20 +276,27 @@ public:
     /// @return A reference to the current Gnuplot object.
     Gnuplot &unset_surface();
 
-    /// @brief Enables the legend and sets its position in the plot.
-    /// @details Available positions:
-    /// - `inside` or `outside`
-    /// - `left`, `center`, or `right`
-    /// - `top`, `center`, or `bottom`
-    /// - `nobox` or `box`
-    /// @param position The position of the legend (default is "default").
-    /// @return A reference to the current Gnuplot object.
-    Gnuplot &set_legend(const std::string &position = "default");
-
-    /// @brief Disables the legend in the plot.
-    /// @details The legend is enabled by default.
-    /// @return A reference to the current Gnuplot object.
-    Gnuplot &unset_legend();
+    /// @brief Sets the legend (key) properties in Gnuplot.
+    /// @details 
+    /// This function allows you to customize the position, font, title, box visibility,
+    /// and spacing of the legend in the plot.
+    /// The position can be a keyword (e.g., "top left") or a specific position
+    /// (e.g., "graph 0.5, 0.5").
+    ///
+    /// @param position The position of the legend. If empty, no title is set.
+    /// @param font The font and size of the legend text. The format is "fontname,size" (e.g., "Arial,12").
+    /// @param title The title of the legend. Default is empty (no title).
+    /// @param with_box Whether to show a box around the legend (`true` for box, `false` for no box).
+    /// @param spacing The spacing between legend entries. Default is 1.0 (no extra spacing).
+    /// @param width The width of the legend box. Default is `2.0`.
+    ///
+    /// @return Gnuplot& Returns the Gnuplot object itself for method chaining.
+    Gnuplot &set_legend(const std::string &position = "default",
+                        const std::string &font     = "",
+                        const std::string &title    = "",
+                        bool with_box               = true,
+                        double spacing              = 3.5,
+                        double width                = 2.0);
 
     /// @brief Sets the title of the plot.
     /// @param title The title of the plot (default is an empty string).

@@ -39,7 +39,7 @@ int main(int, char *[])
     wait_for_key();
 #endif
 
-#if 1
+#if 0
     std::vector<double> x, y, dy;
     for (unsigned int i = 0; i < 50; i++) {
         x.push_back((double)i);                           // x[i] = i
@@ -56,6 +56,25 @@ int main(int, char *[])
         .set_line_style(line_style_t::dashed)
         .set_line_color("blue")
         .plot_xy_erorrbar(x, y, dy, erorrbar_style_t::yerrorbars, "x^2");
+    // Pause for the user to view.
+    wait_for_key();
+#endif
+
+#if 1
+    // Initialize gnuplot.
+    Gnuplot gnuplot;
+    std::vector<double> x, y;
+    for (unsigned int i = 0; i < 50; i++) {
+        x.push_back((double)i);             // x[i] = i
+        y.push_back((double)i * (double)i); // y[i] = i^2
+    }
+    // Plot the data with a title.
+    gnuplot.set_grid()
+        .set_legend("top left", "Courier,20", "", true, 4.0, 4.0)
+        .set_plot_style(plot_style_t::steps)
+        .set_line_width(2.0)
+        .plot_xy(x, y, "x^2");
+
     // Pause for the user to view.
     wait_for_key();
 #endif
