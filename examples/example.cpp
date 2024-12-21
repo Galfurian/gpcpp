@@ -63,6 +63,7 @@ int main(int, char *[])
 #if 1
     // Initialize gnuplot.
     Gnuplot gnuplot;
+    gnuplot.set_terminal(gnuplotcpp::terminal_type_t::pdfcairo);
     std::vector<double> x, y;
     for (unsigned int i = 0; i < 50; i++) {
         x.push_back((double)i);             // x[i] = i
@@ -70,7 +71,7 @@ int main(int, char *[])
     }
     // Plot the data with a title.
     gnuplot.set_grid()
-        .set_legend("top left", "Courier,20", "", true, 4.0, 4.0)
+        .set_legend("top left", "Courier,12")
         .set_plot_style(plot_style_t::steps)
         .set_line_width(2.0)
         .plot_xy(x, y, "x^2");

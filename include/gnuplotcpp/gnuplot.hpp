@@ -106,6 +106,66 @@ enum class point_style_t {
     filled_diamond,           // Filled diamond (◆).
 };
 
+/// @brief Enumeration of gnuplot terminal types.
+/// @details This enum class represents all terminal types supported by gnuplot
+/// as per the provided list. Each terminal type corresponds to a specific
+/// plotting or output format.
+enum class terminal_type_t {
+    wxt,          ///< wxWidgets cross-platform interactive terminal
+    cairolatex,   ///< LaTeX picture environment using graphicx package and Cairo backend
+    canvas,       ///< HTML Canvas object
+    cgm,          ///< Computer Graphics Metafile
+    context,      ///< ConTeXt with MetaFun (for PDF documents)
+    domterm,      ///< DomTerm terminal emulator with embedded SVG
+    dpu414,       ///< Seiko DPU-414 thermal printer
+    dumb,         ///< ASCII art for anything that prints text
+    dxf,          ///< DXF file for AutoCAD
+    emf,          ///< Enhanced Metafile format
+    epscairo,     ///< EPS terminal based on Cairo
+    epslatex,     ///< LaTeX picture environment using graphicx package
+    epson_180dpi, ///< Epson LQ-style 180-dot per inch (24 pin) printers
+    epson_60dpi,  ///< Epson-style 60-dot per inch printers
+    epson_lx800,  ///< Epson LX-800, Star NL-10, NX-1000, PROPRINTER
+    fig,          ///< FIG graphics language for XFIG graphics editor
+    gif,          ///< GIF images using libgd and TrueType fonts
+    hp500c,       ///< HP DeskJet 500c
+    hpdj,         ///< HP DeskJet 500
+    hpgl,         ///< HP7475 and relatives
+    hpljii,       ///< HP Laserjet series II
+    hppj,         ///< HP PaintJet and HP3630
+    jpeg,         ///< JPEG images using libgd and TrueType fonts
+    lua,          ///< Lua generic terminal driver
+    mf,           ///< Metafont plotting standard
+    mp,           ///< MetaPost plotting standard
+    nec_cp6,      ///< NEC printer CP6, Epson LQ-800
+    okidata,      ///< OKIDATA 320/321 Standard
+    pbm,          ///< Portable bitmap
+    pcl5,         ///< PCL5e/PCL5c printers using HP-GL/2
+    pdfcairo,     ///< PDF terminal based on Cairo
+    pict2e,       ///< LaTeX2e picture environment
+    png,          ///< PNG images using libgd and TrueType fonts
+    pngcairo,     ///< PNG terminal based on Cairo
+    postscript,   ///< PostScript graphics, including EPSF embedded files
+    pslatex,      ///< LaTeX picture environment with PostScript \specials
+    pstex,        ///< Plain TeX with PostScript \specials
+    pstricks,     ///< LaTeX picture environment with PSTricks macros
+    sixelgd,      ///< Sixel using libgd and TrueType fonts
+    sixeltek,     ///< Sixel output using bitmap graphics
+    starc,        ///< Star Color Printer
+    svg,          ///< W3C Scalable Vector Graphics
+    tandy_60dpi,  ///< Tandy DMP-130 series 60-dot per inch graphics
+    tek40xx,      ///< Tektronix 4010 and others; most TEK emulators
+    tek410x,      ///< Tektronix 4106, 4107, 4109 and 420X terminals
+    texdraw,      ///< LaTeX texdraw environment
+    tikz,         ///< TeX TikZ graphics macros via the Lua script driver
+    tkcanvas,     ///< Tk canvas widget
+    unknown,      ///< Unknown terminal type - not a plotting device
+    vttek,        ///< VT-like Tek40xx terminal emulator
+    x11,          ///< X11 Window System interactive terminal
+    xlib,         ///< X11 Window System (dump of gnuplot_x11 command stream)
+    xterm         ///< Xterm Tektronix 4014 Mode
+};
+
 /// @brief Main Gnuplot class for managing plots.
 class Gnuplot {
 public:
@@ -122,13 +182,9 @@ public:
     static bool set_gnuplot_path(const std::string &path);
 
     /// @brief Sets the default terminal type for displaying plots.
-    /// @details Defaults are:
-    /// - Windows: "win"
-    /// - Linux: "x11"
-    /// - macOS: "aqua"
-    /// @param type The terminal type to set.
+    /// @param type The terminal type to set (default is "wxt").
     /// @return void
-    static void set_terminal_std(const std::string &type);
+    void set_terminal(terminal_type_t type = terminal_type_t::wxt);
 
     /// @brief Sends a command to the Gnuplot session.
     /// @param cmdstr The command string to send to Gnuplot.
@@ -277,7 +333,7 @@ public:
     Gnuplot &unset_surface();
 
     /// @brief Sets the legend (key) properties in Gnuplot.
-    /// @details 
+    /// @details
     /// This function allows you to customize the position, font, title, box visibility,
     /// and spacing of the legend in the plot.
     /// The position can be a keyword (e.g., "top left") or a specific position
@@ -579,8 +635,19 @@ private:
     /// @return Gnuplot-compatible string for the error bar style.
     std::string errorbars_to_string(erorrbar_style_t style = erorrbar_style_t::yerrorbars);
 
+    /// @brief Converts a terminal_type_t enum value to a corresponding
+    /// gnuplot-compatible string.
+    /// @details This function takes a terminal_type_t enum value and returns
+    /// the string representation accepted by gnuplot. For custom terminals, the
+    /// custom options can be appended.
+    /// @param terminal The terminal_type_t enum value.
+    /// @return A string representing the gnuplot terminal type.
+    std::string terminal_type_to_string(terminal_type_t type);
+
     /// @brief pointer to the stream that can be used to write to the pipe
     FILE *gnuplot_pipe;
+    /// @brief standart terminal, used by showonscreen.
+    terminal_type_t terminal_type;
     /// @brief validation of gnuplot session
     bool valid;
     /// @brief true = 2d, false = 3d
@@ -622,8 +689,6 @@ private:
     static std::string m_gnuplot_filename;
     /// @brief gnuplot path
     static std::string m_gnuplot_path;
-    /// @brief standart terminal, used by showonscreen
-    static std::string m_terminal_std;
 };
 
 } // namespace gnuplotcpp

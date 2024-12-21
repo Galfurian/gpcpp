@@ -23,16 +23,10 @@ int Gnuplot::m_tmpfile_num = 0;
 // Windows-specific static variable initializations
 std::string Gnuplot::m_gnuplot_filename = "pgnuplot.exe";
 std::string Gnuplot::m_gnuplot_path     = "C:/program files/gnuplot/bin/";
-std::string Gnuplot::m_terminal_std     = "windows";
 #elif defined(unix) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
 // UNIX-like system static variable initializations
 std::string Gnuplot::m_gnuplot_filename = "gnuplot";
 std::string Gnuplot::m_gnuplot_path     = "/usr/local/bin/";
-#if defined(__APPLE__)
-std::string Gnuplot::m_terminal_std = "aqua";
-#else
-std::string Gnuplot::m_terminal_std = "x11";
-#endif
 #endif
 
 /// Macro to create a temporary file using platform-specific functions
@@ -61,17 +55,18 @@ std::string Gnuplot::m_terminal_std = "x11";
 #endif
 
 Gnuplot::Gnuplot()
-    : gnuplot_pipe(nullptr),              // No active pipe initially
-      valid(false),                       // Invalid session by default
-      two_dim(true),                      // 2D plotting by default
-      nplots(0),                          // No plots initially
-      line_width(1.0),                    // Default line width
-      plot_style(plot_style_t::lines),    // Default plot style is lines
-      smooth_style(smooth_style_t::none), // No smoothing by default
-      line_style(""),                     // No custom line style
-      line_color(""),                     // Default line color is unspecified
-      point_style(point_style_t::none),   // Default point style is none
-      point_size(-1.0)                    // Default point size is unspecified
+    : gnuplot_pipe(nullptr),               // No active pipe initially
+      terminal_type(terminal_type_t::wxt), // Default terminal type is wxt
+      valid(false),                        // Invalid session by default
+      two_dim(true),                       // 2D plotting by default
+      nplots(0),                           // No plots initially
+      line_width(1.0),                     // Default line width
+      plot_style(plot_style_t::lines),     // Default plot style is lines
+      smooth_style(smooth_style_t::none),  // No smoothing by default
+      line_style(""),                      // No custom line style
+      line_color(""),                      // Default line color is unspecified
+      point_style(point_style_t::none),    // Default point style is none
+      point_size(-1.0)                     // Default point size is unspecified
 
 {
 #if (defined(unix) || defined(__unix) || defined(__unix__)) && !defined(__APPLE__)
@@ -1012,18 +1007,18 @@ bool Gnuplot::set_gnuplot_path(const std::string &path)
     }
 }
 
-void Gnuplot::set_terminal_std(const std::string &type)
+void Gnuplot::set_terminal(terminal_type_t type)
 {
     // For Unix-like systems, ensure the DISPLAY variable is set when using X11.
 #if defined(unix) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
-    if (type.find("x11") != std::string::npos && getenv("DISPLAY") == NULL) {
+    if ((type == terminal_type_t::x11) && (getenv("DISPLAY") == NULL)) {
         std::cerr << "Error: Can't find DISPLAY environment variable. Ensure an active X11 session.\n";
         return;
     }
 #endif
 
     // Update the standard terminal type
-    Gnuplot::m_terminal_std = type;
+    terminal_type = type;
 }
 
 /// Tokenizes a string into a container based on the specified delimiters.
@@ -1124,8 +1119,7 @@ Gnuplot &Gnuplot::set_point_size(double size)
 Gnuplot &Gnuplot::showonscreen()
 {
     this->send_cmd("set output");
-    this->send_cmd("set terminal " + Gnuplot::m_terminal_std);
-
+    this->send_cmd("set terminal " + this->terminal_type_to_string(terminal_type));
     return *this;
 }
 
@@ -1710,6 +1704,120 @@ std::string Gnuplot::errorbars_to_string(erorrbar_style_t style)
         return "xerrorbars";
     default:
         return "yerrorbars";
+    }
+}
+
+std::string Gnuplot::terminal_type_to_string(terminal_type_t type)
+{
+    switch (type) {
+    case terminal_type_t::cairolatex:
+        return "cairolatex";
+    case terminal_type_t::canvas:
+        return "canvas";
+    case terminal_type_t::cgm:
+        return "cgm";
+    case terminal_type_t::context:
+        return "context";
+    case terminal_type_t::domterm:
+        return "domterm";
+    case terminal_type_t::dpu414:
+        return "dpu414";
+    case terminal_type_t::dumb:
+        return "dumb";
+    case terminal_type_t::dxf:
+        return "dxf";
+    case terminal_type_t::emf:
+        return "emf";
+    case terminal_type_t::epscairo:
+        return "epscairo";
+    case terminal_type_t::epslatex:
+        return "epslatex";
+    case terminal_type_t::epson_180dpi:
+        return "epson_180dpi";
+    case terminal_type_t::epson_60dpi:
+        return "epson_60dpi";
+    case terminal_type_t::epson_lx800:
+        return "epson_lx800";
+    case terminal_type_t::fig:
+        return "fig";
+    case terminal_type_t::gif:
+        return "gif";
+    case terminal_type_t::hp500c:
+        return "hp500c";
+    case terminal_type_t::hpdj:
+        return "hpdj";
+    case terminal_type_t::hpgl:
+        return "hpgl";
+    case terminal_type_t::hpljii:
+        return "hpljii";
+    case terminal_type_t::hppj:
+        return "hppj";
+    case terminal_type_t::jpeg:
+        return "jpeg";
+    case terminal_type_t::lua:
+        return "lua";
+    case terminal_type_t::mf:
+        return "mf";
+    case terminal_type_t::mp:
+        return "mp";
+    case terminal_type_t::nec_cp6:
+        return "nec_cp6";
+    case terminal_type_t::okidata:
+        return "okidata";
+    case terminal_type_t::pbm:
+        return "pbm";
+    case terminal_type_t::pcl5:
+        return "pcl5";
+    case terminal_type_t::pdfcairo:
+        return "pdfcairo";
+    case terminal_type_t::pict2e:
+        return "pict2e";
+    case terminal_type_t::png:
+        return "png";
+    case terminal_type_t::pngcairo:
+        return "pngcairo";
+    case terminal_type_t::postscript:
+        return "postscript";
+    case terminal_type_t::pslatex:
+        return "pslatex";
+    case terminal_type_t::pstex:
+        return "pstex";
+    case terminal_type_t::pstricks:
+        return "pstricks";
+    case terminal_type_t::sixelgd:
+        return "sixelgd";
+    case terminal_type_t::sixeltek:
+        return "sixeltek";
+    case terminal_type_t::starc:
+        return "starc";
+    case terminal_type_t::svg:
+        return "svg";
+    case terminal_type_t::tandy_60dpi:
+        return "tandy_60dpi";
+    case terminal_type_t::tek40xx:
+        return "tek40xx";
+    case terminal_type_t::tek410x:
+        return "tek410x";
+    case terminal_type_t::texdraw:
+        return "texdraw";
+    case terminal_type_t::tikz:
+        return "tikz";
+    case terminal_type_t::tkcanvas:
+        return "tkcanvas";
+    case terminal_type_t::unknown:
+        return "unknown";
+    case terminal_type_t::vttek:
+        return "vttek";
+    case terminal_type_t::wxt:
+        return "wxt";
+    case terminal_type_t::x11:
+        return "x11";
+    case terminal_type_t::xlib:
+        return "xlib";
+    case terminal_type_t::xterm:
+        return "xterm";
+    default:
+        return "wxt";
     }
 }
 
