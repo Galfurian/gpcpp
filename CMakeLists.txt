@@ -96,6 +96,26 @@ if(BUILD_EXAMPLES)
     add_executable(gnuplotcpp_usage examples/example.cpp)
     target_include_directories(gnuplotcpp_usage PUBLIC ${PROJECT_SOURCE_DIR}/examples)
     target_link_libraries(gnuplotcpp_usage PUBLIC gnuplotcpp)
+
+    # Add the example.
+    add_executable(gnuplotcpp_example_line_plot examples/example_line_plot.cpp)
+    target_include_directories(gnuplotcpp_example_line_plot PUBLIC ${PROJECT_SOURCE_DIR}/examples)
+    target_link_libraries(gnuplotcpp_example_line_plot PUBLIC gnuplotcpp)
+    
+    # Add the example.
+    add_executable(gnuplotcpp_example_scatter_plot examples/example_scatter_plot.cpp)
+    target_include_directories(gnuplotcpp_example_scatter_plot PUBLIC ${PROJECT_SOURCE_DIR}/examples)
+    target_link_libraries(gnuplotcpp_example_scatter_plot PUBLIC gnuplotcpp)
+    
+    # Add the example.
+    add_executable(gnuplotcpp_example_line_plot_with_error_bars examples/example_line_plot_with_error_bars.cpp)
+    target_include_directories(gnuplotcpp_example_line_plot_with_error_bars PUBLIC ${PROJECT_SOURCE_DIR}/examples)
+    target_link_libraries(gnuplotcpp_example_line_plot_with_error_bars PUBLIC gnuplotcpp)
+    
+    # Add the example.
+    add_executable(gnuplotcpp_example_3d_surface_plot examples/example_3d_surface_plot.cpp)
+    target_include_directories(gnuplotcpp_example_3d_surface_plot PUBLIC ${PROJECT_SOURCE_DIR}/examples)
+    target_link_libraries(gnuplotcpp_example_3d_surface_plot PUBLIC gnuplotcpp)
 endif()
 
 # -----------------------------------------------------------------------------

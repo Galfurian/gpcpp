@@ -94,10 +94,10 @@ enum class point_style_t {
     plus,                     // Plus (+) shape.
     cross,                    // Cross (×) shape.
     asterisk,                 // Asterisk (*) shape.
-    open_circle,              // Open circle (○).
-    filled_circle,            // Filled circle (●).
     open_square,              // Open square (□).
     filled_square,            // Filled square (■).
+    open_circle,              // Open circle (○).
+    filled_circle,            // Filled circle (●).
     open_triangle,            // Open triangle (△).
     filled_triangle,          // Filled triangle (▲).
     open_inverted_triangle,   // Open inverted triangle (▽).

@@ -1188,7 +1188,8 @@ Gnuplot &Gnuplot::set_legend(const std::string &position,
 
 Gnuplot &Gnuplot::set_title(const std::string &title)
 {
-    *this << "set title \"" << title << "\"";
+    // Send the command to Gnuplot
+    this->send_cmd("set title \"" + title + "\"");
     return *this;
 }
 
