@@ -373,7 +373,7 @@ public:
                         const std::string &font     = "",
                         const std::string &title    = "",
                         bool with_box               = true,
-                        double spacing              = 3.5,
+                        double spacing              = 1.0,
                         double width                = 2.0);
 
     /// @brief Sets the title of the plot.
