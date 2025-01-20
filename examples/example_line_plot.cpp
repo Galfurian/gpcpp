@@ -7,11 +7,11 @@
 #include <vector>
 #include <cmath>
 
-#include <gnuplotcpp/gnuplot.hpp>
+#include <gpcpp/gnuplot.hpp>
 
 int main()
 {
-    using namespace gnuplotcpp;
+    using namespace gpcpp;
 
     // Create a Gnuplot instance
     Gnuplot gnuplot;

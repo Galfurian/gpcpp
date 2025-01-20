@@ -3,7 +3,7 @@
 
 #pragma once
 
-namespace gnuplotcpp
+namespace gpcpp
 {
 
 /// @brief Maximum number of temporary files allowed.
@@ -1007,18 +1007,19 @@ bool Gnuplot::set_gnuplot_path(const std::string &path)
     }
 }
 
-void Gnuplot::set_terminal(terminal_type_t type)
+Gnuplot &Gnuplot::set_terminal(terminal_type_t type)
 {
     // For Unix-like systems, ensure the DISPLAY variable is set when using X11.
 #if defined(unix) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
     if ((type == terminal_type_t::x11) && (getenv("DISPLAY") == NULL)) {
         std::cerr << "Error: Can't find DISPLAY environment variable. Ensure an active X11 session.\n";
-        return;
+        return *this;
     }
 #endif
 
     // Update the standard terminal type
     terminal_type = type;
+    return *this;
 }
 
 /// Tokenizes a string into a container based on the specified delimiters.
@@ -1123,16 +1124,10 @@ Gnuplot &Gnuplot::showonscreen()
     return *this;
 }
 
-Gnuplot &Gnuplot::savetofigure(const std::string filename, const std::string terminal)
+Gnuplot &Gnuplot::set_output(const std::string filename)
 {
-    std::ostringstream oss;
-    oss << "set terminal " << terminal;
-    this->send_cmd(oss.str());
-
-    oss.str(""); // Clear oss
-    oss << "set output \"" << filename << "\"";
-    this->send_cmd(oss.str());
-
+    // Set the output file where the plot will be saved
+    this->send_cmd("set output \"" + filename + "\"");
     return *this;
 }
 
@@ -1201,11 +1196,7 @@ Gnuplot &Gnuplot::unset_title()
 
 Gnuplot &Gnuplot::set_xlogscale(const double base)
 {
-    std::ostringstream cmdstr;
-
-    cmdstr << "set logscale x " << base;
-    this->send_cmd(cmdstr.str());
-
+    this->send_cmd("set logscale x " + std::to_string(base));
     return *this;
 }
 
@@ -1280,6 +1271,18 @@ Gnuplot &Gnuplot::unset_multiplot()
     this->send_cmd("unset multiplot");
     return *this;
 };
+
+Gnuplot &Gnuplot::set_origin_and_size(double x_origin, double y_origin, double width, double height)
+{
+    // Set the origin (position) of the plot in the window
+    this->send_cmd("set origin " + std::to_string(x_origin) + "," + std::to_string(y_origin));
+
+    // Set the size of the plot area (width and height relative to the window)
+    this->send_cmd("set size " + std::to_string(width) + "," + std::to_string(height));
+
+    // Return the current object for method chaining
+    return *this;
+}
 
 Gnuplot &Gnuplot::set_samples(const int samples)
 {
@@ -1838,4 +1841,4 @@ void Gnuplot::remove_tmpfiles()
     tmpfile_list.clear();
 }
 
-} // namespace gnuplotcpp
+} // namespace gpcpp

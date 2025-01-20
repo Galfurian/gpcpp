@@ -1,5 +1,5 @@
-/// @file example_3d_surface_plot.cpp
-/// @brief An example demonstrating how to plot a 3D surface using Gnuplot.
+/// @file example_contour_plot.cpp
+/// @brief An example demonstrating how to apply contours to a 3D surface plot (contours on base, surface, or both).
 /// @copyright Copyright (c) 2025 Enrico Fraccaroli <enry.frak@gmail.com>
 
 #include <iostream>
@@ -32,14 +32,13 @@ int main()
         }
     }
 
-    // Plot the 3D surface with the generated data
+    // Apply contour settings: Contours on both surface and base
     gnuplot
-        .set_title("3D Surface Plot of sin(x) * cos(y)") // Set plot title
-        .set_xlabel("x-axis")                            // Set x-axis label
-        .set_ylabel("y-axis")                            // Set y-axis label
-        .set_zlabel("z-axis")                            // Set z-axis label
-        .set_surface()                                   // Enable surface plot
-        .plot_3d_grid(x, y, z);                          // Plot the 3D grid data
+        .set_title("Contour Plot of sin(x) * cos(y)") // Set plot title
+        .set_xlabel("x-axis")                         // Set x-axis label
+        .set_ylabel("y-axis")                         // Set y-axis label
+        .set_contour_type(contour_type_t::both)       // Apply contours on both surface and base
+        .plot_3d_grid(x, y, z);                       // Plot the 3D grid data
 
     // Wait for user input before closing
     std::cout << "Press Enter to exit..." << std::endl;

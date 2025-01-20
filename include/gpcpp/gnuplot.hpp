@@ -28,7 +28,7 @@
 #error unsupported or unknown operating system
 #endif
 
-namespace gnuplotcpp
+namespace gpcpp
 {
 
 /// @brief Enum representing the various plotting styles available in Gnuplot.
@@ -184,7 +184,7 @@ public:
     /// @brief Sets the default terminal type for displaying plots.
     /// @param type The terminal type to set (default is "wxt").
     /// @return void
-    void set_terminal(terminal_type_t type = terminal_type_t::wxt);
+    Gnuplot & set_terminal(terminal_type_t type = terminal_type_t::wxt);
 
     /// @brief Sends a command to the Gnuplot session.
     /// @param cmdstr The command string to send to Gnuplot.
@@ -210,9 +210,8 @@ public:
 
     /// @brief Saves the current plot to a file.
     /// @param filename The name of the output file.
-    /// @param terminal The terminal type for saving (default is "ps").
     /// @return A reference to the current Gnuplot object.
-    Gnuplot &savetofigure(const std::string filename, const std::string terminal = "ps");
+    Gnuplot &set_output(const std::string filename);
 
     /// Sets the plotting style for the current Gnuplot session.
     /// @param style The plot_style_t enum value representing the desired plotting style.
@@ -266,6 +265,8 @@ public:
     /// @brief Disables multiplot mode.
     /// @return A reference to the current Gnuplot object.
     Gnuplot &unset_multiplot();
+
+    Gnuplot &set_origin_and_size(double x_origin, double y_origin, double width, double height);
 
     /// @brief Sets the sampling rate for plotting functions or interpolating data.
     /// @param samples The number of samples (default is 100).
@@ -691,6 +692,6 @@ private:
     static std::string m_gnuplot_path;
 };
 
-} // namespace gnuplotcpp
+} // namespace gpcpp
 
 #include "gnuplot.i.hpp"

@@ -6,11 +6,11 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include <gnuplotcpp/gnuplot.hpp>
+#include <gpcpp/gnuplot.hpp>
 
 int main()
 {
-    using namespace gnuplotcpp;
+    using namespace gpcpp;
 
     // Create a Gnuplot instance
     Gnuplot gnuplot;
@@ -20,7 +20,7 @@ int main()
     for (unsigned int i = 0; i < 50; i++) {
         x.push_back(static_cast<double>(i)); // x[i] = i
         y.push_back(x[i] * x[i]);            // y[i] = x[i]^2
-        dy.push_back(x[i] * 0.5);            // dy[i] = 0.1 * x[i] (error bars)
+        dy.push_back(x[i] * 10);            // dy[i] = 0.1 * x[i] (error bars)
     }
 
     // Plot the data as a line with error bars
