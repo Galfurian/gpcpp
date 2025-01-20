@@ -153,24 +153,17 @@ endif()
 if(DOXYGEN_FOUND)
     
     # Record the options that describe how to populate the specified content.
-    FetchContent_Declare(
-        doxygenawesome
+    FetchContent_Declare(doxygenawesome
         GIT_REPOSITORY https://github.com/jothepro/doxygen-awesome-css
         GIT_TAG main
     )
     # Retrieve the properties related to the content.
-    FetchContent_GetProperties(doxygenawesome)
-    # If not populated, make the content available.
-    if(NOT doxygenawesome_POPULATED)
-        message(STATUS "Retrieving `doxygen-awesome-css`...")
-        # Ensures the named dependencies have been populated.
-        FetchContent_MakeAvailable(doxygenawesome)
-        # Hide fetchcontent variables, otherwise with ccmake it's a mess.
-        mark_as_advanced(FORCE
-            FETCHCONTENT_UPDATES_DISCONNECTED_DOXYGENAWESOME
-            FETCHCONTENT_SOURCE_DIR_DOXYGENAWESOME
-        )
-    endif()
+    FetchContent_MakeAvailable(doxygenawesome)
+    # Hide fetchcontent variables, otherwise with ccmake it's a mess.
+    mark_as_advanced(FORCE
+        FETCHCONTENT_UPDATES_DISCONNECTED_DOXYGENAWESOME
+        FETCHCONTENT_SOURCE_DIR_DOXYGENAWESOME
+    )
 
     # = CUSTOMIZATION =========================================================
     set(DOXYGEN_WARN_FORMAT "$file:$line: $text")
@@ -188,6 +181,8 @@ if(DOXYGEN_FOUND)
     doxygen_add_docs(
         gpcpp_documentation
         ${PROJECT_SOURCE_DIR}/README.md
+        ${PROJECT_SOURCE_DIR}/LICENSE.md
+        ${PROJECT_SOURCE_DIR}/include/gpcpp/color.hpp
         ${PROJECT_SOURCE_DIR}/include/gpcpp/gnuplot.hpp
         ${PROJECT_SOURCE_DIR}/include/gpcpp/gnuplot.i.hpp
     )
