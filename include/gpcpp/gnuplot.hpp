@@ -49,6 +49,7 @@ enum class plot_style_t {
     histograms,    ///< Histograms.
 };
 
+/// @brief The style of error bars.
 enum class erorrbar_style_t {
     yerrorbars, ///< Error bars along the y-axis.
     xerrorbars, ///< Error bars along the x-axis.
@@ -90,7 +91,8 @@ enum class line_style_t {
     custom        ///< Custom dash pattern
 };
 
-// Enum representing the various predefined point styles available in Gnuplot
+/// @brief Enum representing the various predefined point styles available in
+/// Gnuplot
 enum class point_style_t {
     none,                     // No point (invisible).
     plus,                     // Plus (+) shape.
@@ -148,8 +150,8 @@ enum class terminal_type_t {
     png,          ///< PNG images using libgd and TrueType fonts
     pngcairo,     ///< PNG terminal based on Cairo
     postscript,   ///< PostScript graphics, including EPSF embedded files
-    pslatex,      ///< LaTeX picture environment with PostScript \specials
-    pstex,        ///< Plain TeX with PostScript \specials
+    pslatex,      ///< LaTeX picture environment with PostScript \\specials
+    pstex,        ///< Plain TeX with PostScript \\specials
     pstricks,     ///< LaTeX picture environment with PSTricks macros
     sixelgd,      ///< Sixel using libgd and TrueType fonts
     sixeltek,     ///< Sixel output using bitmap graphics
@@ -275,6 +277,16 @@ public:
     /// @return A reference to the current Gnuplot object.
     Gnuplot &unset_multiplot();
 
+    /// @brief Sets the origin and size of the plot area in the Gnuplot window.
+    /// @param x_origin The x-coordinate of the origin of the plot area (in the range 0 to 1).
+    /// @param y_origin The y-coordinate of the origin of the plot area (in the range 0 to 1).
+    /// @param width The width of the plot area (relative to the window size, in the range 0 to 1).
+    /// @param height The height of the plot area (relative to the window size, in the range 0 to 1).
+    /// @details This function sets the origin and size of the plot area in the Gnuplot window,
+    /// allowing for customized positioning and scaling of the plot within the window.
+    /// The values for the origin (x_origin, y_origin) and size (width, height) should be given
+    /// as fractions of the total window size (e.g., 0.5 for half the window).
+    /// @return A reference to the current Gnuplot object, allowing for method chaining.
     Gnuplot &set_origin_and_size(double x_origin, double y_origin, double width, double height);
 
     /// @brief Sets the sampling rate for plotting functions or interpolating data.

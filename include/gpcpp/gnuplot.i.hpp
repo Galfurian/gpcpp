@@ -1257,26 +1257,26 @@ Gnuplot &Gnuplot::set_grid()
 {
     this->send_cmd("set grid");
     return *this;
-};
+}
 
 /// grid is not set by default
 Gnuplot &Gnuplot::unset_grid()
 {
     this->send_cmd("unset grid");
     return *this;
-};
+}
 
 Gnuplot &Gnuplot::set_multiplot()
 {
     this->send_cmd("set multiplot");
     return *this;
-};
+}
 
 Gnuplot &Gnuplot::unset_multiplot()
 {
     this->send_cmd("unset multiplot");
     return *this;
-};
+}
 
 Gnuplot &Gnuplot::set_origin_and_size(double x_origin, double y_origin, double width, double height)
 {
@@ -1346,25 +1346,25 @@ Gnuplot &Gnuplot::set_hidden3d()
 {
     this->send_cmd("set hidden3d");
     return *this;
-};
+}
 
 Gnuplot &Gnuplot::unset_hidden3d()
 {
     this->send_cmd("unset hidden3d");
     return *this;
-};
+}
 
 Gnuplot &Gnuplot::unset_contour()
 {
     this->send_cmd("unset contour");
     return *this;
-};
+}
 
 Gnuplot &Gnuplot::set_surface()
 {
     this->send_cmd("set surface");
     return *this;
-};
+}
 
 Gnuplot &Gnuplot::unset_surface()
 {
@@ -1377,21 +1377,21 @@ Gnuplot &Gnuplot::set_xautoscale()
     this->send_cmd("set xrange restore");
     this->send_cmd("set autoscale x");
     return *this;
-};
+}
 
 Gnuplot &Gnuplot::set_yautoscale()
 {
     this->send_cmd("set yrange restore");
     this->send_cmd("set autoscale y");
     return *this;
-};
+}
 
 Gnuplot &Gnuplot::set_zautoscale()
 {
     this->send_cmd("set zrange restore");
     this->send_cmd("set autoscale z");
     return *this;
-};
+}
 
 Gnuplot &Gnuplot::set_xlabel(const std::string &label)
 {

@@ -1,5 +1,10 @@
 # GPCpp
 
+[![Ubuntu](https://github.com/Galfurian/gpcpp/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/Galfurian/gpcpp/actions/workflows/ubuntu.yml)
+[![Windows](https://github.com/Galfurian/gpcpp/actions/workflows/windows.yml/badge.svg)](https://github.com/Galfurian/gpcpp/actions/workflows/windows.yml)
+[![MacOS](https://github.com/Galfurian/gpcpp/actions/workflows/macos.yml/badge.svg)](https://github.com/Galfurian/gpcpp/actions/workflows/macos.yml)
+[![Documentation](https://github.com/Galfurian/gpcpp/actions/workflows/documentation.yml/badge.svg)](https://github.com/Galfurian/gpcpp/actions/workflows/documentation.yml)
+
 GPCpp is a C++ interface to the powerful plotting utility **Gnuplot**. It allows seamless interaction with Gnuplot for generating and customizing a variety of plots, including line plots, scatter plots, 3D surface plots, error bars, logarithmic scaling, and more.
 
 ## Features
