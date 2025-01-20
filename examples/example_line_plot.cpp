@@ -31,11 +31,8 @@ int main()
         .set_line_color("blue")               // Set line color to blue.
         .set_line_width(2.0)                  // Set line width.
         .set_title("Simple Plot of y = x^2")  // Set plot title.
-        .plot_xy(x, y);                       // Plot the x, y pairs.
-
-    // Wait for user input before closing
-    std::cout << "Press Enter to exit..." << std::endl;
-    std::cin.get();
+        .plot_xy(x, y)                        // Plot the x, y pairs.
+        .show();
 
     return 0;
 }

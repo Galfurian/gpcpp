@@ -33,7 +33,6 @@ mark_as_advanced(FORCE
 # OPTIONS
 # -----------------------------------------------------------------------------
 
-option(BUILD_TESTS "Build tests" OFF)
 option(BUILD_EXAMPLES "Build examples" ON)
 option(STRICT_WARNINGS "Enable strict compiler warnings" ON)
 option(WARNINGS_AS_ERRORS "Treat all warnings as errors" OFF)
@@ -132,17 +131,6 @@ if(BUILD_EXAMPLES)
     add_executable(gpcpp_example_save_plot_to_file examples/example_save_plot_to_file.cpp)
     target_include_directories(gpcpp_example_save_plot_to_file PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
     target_link_libraries(gpcpp_example_save_plot_to_file PUBLIC gpcpp)
-
-endif()
-
-# -----------------------------------------------------------------------------
-# TESTS
-# -----------------------------------------------------------------------------
-
-if(BUILD_TESTS)
-
-    # CMake has support for adding tests to a project.
-    enable_testing()
 
 endif()
 

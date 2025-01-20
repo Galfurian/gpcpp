@@ -39,11 +39,8 @@ int main()
         .set_ylabel("y-axis")                            // Set y-axis label
         .set_zlabel("z-axis")                            // Set z-axis label
         .set_surface()                                   // Enable surface plot
-        .plot_3d_grid(x, y, z);                          // Plot the 3D grid data
-
-    // Wait for user input before closing
-    std::cout << "Press Enter to exit..." << std::endl;
-    std::cin.get();
+        .plot_3d_grid(x, y, z)                           // Plot the 3D grid data
+        .show();
 
     return 0;
 }

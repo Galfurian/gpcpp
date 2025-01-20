@@ -118,9 +118,6 @@ Gnuplot::Gnuplot()
 
     // Clear temporary file list.
     tmpfile_list.clear();
-
-    // Set terminal type and initial plot settings.
-    this->showonscreen();
 }
 
 Gnuplot::~Gnuplot()
@@ -1075,7 +1072,6 @@ Gnuplot &Gnuplot::reset_all()
     this->send_cmd("clear");
     plot_style   = plot_style_t::none;
     smooth_style = smooth_style_t::none;
-    showonscreen();
     return *this;
 }
 
@@ -1123,10 +1119,15 @@ Gnuplot &Gnuplot::set_point_size(double size)
     return *this;
 }
 
-Gnuplot &Gnuplot::showonscreen()
+Gnuplot &Gnuplot::show()
 {
     this->send_cmd("set output");
     this->send_cmd("set terminal " + this->terminal_type_to_string(terminal_type));
+
+    // Wait for user input before closing.
+    std::cout << "Press Enter to continue..." << std::endl;
+    std::cin.get();
+
     return *this;
 }
 
@@ -1134,6 +1135,7 @@ Gnuplot &Gnuplot::set_output(const std::string filename)
 {
     // Set the output file where the plot will be saved
     this->send_cmd("set output \"" + filename + "\"");
+    this->send_cmd("set terminal " + this->terminal_type_to_string(terminal_type));
     return *this;
 }
 

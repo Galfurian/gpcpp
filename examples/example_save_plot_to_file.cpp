@@ -30,8 +30,5 @@ int main()
 
     std::cout << "Plot saved to output_plot.png" << std::endl;
 
-    // Wait for user input before closing
-    std::cin.get();
-
     return 0;
 }

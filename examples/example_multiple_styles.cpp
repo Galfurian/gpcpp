@@ -43,11 +43,9 @@ int main()
         .set_plot_style(plot_style_t::lines)
         .set_line_color("#228B22")
         .set_line_width(2.0)
-        .plot_xy(x, w, "w = 2 * x^2");
+        .plot_xy(x, w, "w = 2 * x^2")
 
-    // Wait for user input before closing
-    std::cout << "Press Enter to exit..." << std::endl;
-    std::cin.get();
+        .show();
 
     return 0;
 }

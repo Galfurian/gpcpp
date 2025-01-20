@@ -25,14 +25,11 @@ int main()
     gnuplot
         .set_grid()                                         // Show the grid.
         .set_plot_style(plot_style_t::lines)                // Set the plot style to line.
-        .set_line_style(line_style_t::custom, "30,10")       // Set line style to custom dashed.
+        .set_line_style(line_style_t::custom, "30,10")      // Set line style to custom dashed.
         .set_line_width(2.0)                                // Set line width
         .set_title("Plot with Custom Line Style and Color") // Set plot title
-        .plot_xy(x, y);                                     // Plot the x, y pairs
-
-    // Wait for user input before closing
-    std::cout << "Press Enter to exit..." << std::endl;
-    std::cin.get();
+        .plot_xy(x, y)                                      // Plot the x, y pairs
+        .show();
 
     return 0;
 }

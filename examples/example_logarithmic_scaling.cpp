@@ -31,11 +31,8 @@ int main()
         .set_plot_style(plot_style_t::lines) // Set the plot style to line.
         .set_line_color("blue")              // Set line color to blue.
         .set_line_width(2.0)                 // Set line width.
-        .plot_xy(x, y);                      // Plot the x, y pairs.
-
-    // Wait for user input before closing
-    std::cout << "Press Enter to exit..." << std::endl;
-    std::cin.get();
+        .plot_xy(x, y)                       // Plot the x, y pairs.
+        .show();
 
     return 0;
 }

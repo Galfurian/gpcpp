@@ -39,9 +39,7 @@ int main()
     // End multiplot mode
     gnuplot.unset_multiplot();
 
-    // Wait for user input before closing
-    std::cout << "Press Enter to exit..." << std::endl;
-    std::cin.get();
+    gnuplot.show();
 
     return 0;
 }

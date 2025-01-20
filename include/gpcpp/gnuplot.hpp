@@ -210,7 +210,7 @@ public:
     /// - Linux: "x11"
     /// - macOS: "aqua"
     /// @return A reference to the current Gnuplot object.
-    Gnuplot &showonscreen();
+    Gnuplot &show();
 
     /// @brief Saves the current plot to a file.
     /// @param filename The name of the output file.
@@ -668,7 +668,7 @@ private:
 
     /// @brief pointer to the stream that can be used to write to the pipe
     FILE *gnuplot_pipe;
-    /// @brief standart terminal, used by showonscreen.
+    /// @brief standart terminal, used by show.
     terminal_type_t terminal_type;
     /// @brief validation of gnuplot session
     bool valid;

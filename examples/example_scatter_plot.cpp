@@ -30,11 +30,8 @@ int main()
         .set_point_style(point_style_t::open_triangle) // Set filled circle for points
         .set_point_size(1.5)                           // Set point size
         .set_line_width(0)                             // No line connecting points
-        .plot_xy(x, y);                                // Plot the x, y pairs
-
-    // Wait for user input before closing
-    std::cout << "Press Enter to exit..." << std::endl;
-    std::cin.get();
+        .plot_xy(x, y)                                 // Plot the x, y pairs
+        .show();
 
     return 0;
 }
