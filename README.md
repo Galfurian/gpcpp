@@ -1,6 +1,6 @@
-# GnuplotCpp
+# GPCpp
 
-GnuplotCpp is a C++ interface to the powerful plotting utility **Gnuplot**. It allows seamless interaction with Gnuplot for generating and customizing a variety of plots, including line plots, scatter plots, 3D surface plots, error bars, logarithmic scaling, and more.
+GPCpp is a C++ interface to the powerful plotting utility **Gnuplot**. It allows seamless interaction with Gnuplot for generating and customizing a variety of plots, including line plots, scatter plots, 3D surface plots, error bars, logarithmic scaling, and more.
 
 ## Features
 
@@ -51,7 +51,7 @@ make
 
 ### Linking the Library
 
-To link gpcpp to your project, include the following in your CMakeLists.txt:
+To link GPCpp to your project, include the following in your CMakeLists.txt:
 
 ```cmake
 target_link_libraries(your_project gpcpp)
@@ -59,7 +59,7 @@ target_link_libraries(your_project gpcpp)
 
 ## Usage
 
-Here is a simple example demonstrating how to plot data using gpcpp:
+Here is a simple example demonstrating how to plot data using GPCpp:
 
 ```cpp
 #include <iostream>
