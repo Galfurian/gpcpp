@@ -249,7 +249,6 @@ Gnuplot &Gnuplot::plot_x(const X &x, const std::string &title)
             oss << " ps " << point_size;
         }
     }
-    std::cout << oss.str() << "\n";
     // Send the constructed command to Gnuplot for execution
     this->send_cmd(oss.str());
 
@@ -466,7 +465,6 @@ Gnuplot &Gnuplot::plot_xy(const X &x, const Y &y, const std::string &title)
             oss << " ps " << point_size;
         }
     }
-    std::cout << oss.str() << "\n";
     // Send the constructed command to Gnuplot for execution
     this->send_cmd(oss.str());
 
