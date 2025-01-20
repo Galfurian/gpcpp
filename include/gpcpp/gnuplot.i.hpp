@@ -64,7 +64,7 @@ Gnuplot::Gnuplot()
       plot_style(plot_style_t::lines),     // Default plot style is lines
       smooth_style(smooth_style_t::none),  // No smoothing by default
       line_style(""),                      // No custom line style
-      line_color(""),                      // Default line color is unspecified
+      line_color(),                        // Default line color is unspecified
       point_style(point_style_t::none),    // Default point style is none
       point_size(-1.0)                     // Default point size is unspecified
 
@@ -102,7 +102,7 @@ Gnuplot::Gnuplot()
     plot_style   = plot_style_t::none;
     smooth_style = smooth_style_t::none;
     line_style.clear();
-    line_color.clear();
+    line_color.unset();
     point_style = point_style_t::plus;
     point_size  = -1.0;
     line_width  = -1.0;
@@ -229,8 +229,8 @@ Gnuplot &Gnuplot::plot_x(const X &x, const std::string &title)
         oss << " smooth " << this->smooth_style_to_string(smooth_style);
     }
     // Include line color if it is specified.
-    if (!line_color.empty()) {
-        oss << " lc rgb \"" << line_color << "\"";
+    if (line_color.is_set()) {
+        oss << " lc rgb \"" << line_color.to_string() << "\"";
     }
     // Add line style options only if the plot style supports lines.
     if (is_line_style(plot_style)) {
@@ -355,8 +355,8 @@ Gnuplot &Gnuplot::plot_x(const std::vector<X> &datasets, const std::vector<std::
             if (line_width > 0) {
                 oss << " lw " << line_width;
             }
-            if (!line_color.empty()) {
-                oss << " lc rgb \"" << line_color << "\"";
+            if (line_color.is_set()) {
+                oss << " lc rgb \"" << line_color.to_string() << "\"";
             }
         }
 
@@ -445,8 +445,8 @@ Gnuplot &Gnuplot::plot_xy(const X &x, const Y &y, const std::string &title)
         oss << " smooth " << this->smooth_style_to_string(smooth_style);
     }
     // Include line color if it is specified.
-    if (!line_color.empty()) {
-        oss << " lc rgb \"" << line_color << "\"";
+    if (line_color.is_set()) {
+        oss << " lc rgb \"" << line_color.to_string() << "\"";
     }
     // Add line style options only if the plot style supports lines.
     if (is_line_style(plot_style)) {
@@ -539,8 +539,8 @@ Gnuplot::plot_xy_erorrbar(const X &x, const Y &y, const E &dy, erorrbar_style_t 
     oss << (title.empty() ? " notitle " : " title \"" + title + "\" ");
 
     // Include line color if it is specified.
-    if (!line_color.empty()) {
-        oss << " lc rgb \"" << line_color << "\"";
+    if (line_color.is_set()) {
+        oss << " lc rgb \"" << line_color.to_string() << "\"";
     }
 
     // Add line width if specified.
@@ -636,8 +636,8 @@ Gnuplot &Gnuplot::plot_xyz(const X &x, const Y &y, const Z &z, const std::string
     }
 
     // Include line color if it is specified.
-    if (!line_color.empty()) {
-        oss << " lc rgb \"" << line_color << "\"";
+    if (line_color.is_set()) {
+        oss << " lc rgb \"" << line_color.to_string() << "\"";
     }
 
     // Add line style options only if the plot style supports lines.
@@ -741,8 +741,8 @@ Gnuplot &Gnuplot::plot_3d_grid(const X &x, const Y &y, const Z &z, const std::st
     }
 
     // Include line color if it is specified.
-    if (!line_color.empty()) {
-        oss << " lc rgb \"" << line_color << "\"";
+    if (line_color.is_set()) {
+        oss << " lc rgb \"" << line_color.to_string() << "\"";
     }
 
     // Add line style options only if the plot style supports lines.
@@ -797,8 +797,8 @@ Gnuplot &Gnuplot::plot_slope(const double a, const double b, const std::string &
     }
 
     // Include line color if it is specified.
-    if (!line_color.empty()) {
-        oss << " lc rgb \"" << line_color << "\"";
+    if (line_color.is_set()) {
+        oss << " lc rgb \"" << line_color.to_string() << "\"";
     }
 
     // Add line style options only if the plot style supports lines.
@@ -850,8 +850,8 @@ Gnuplot &Gnuplot::plot_equation(const std::string &equation, const std::string &
     }
 
     // Include line color if it is specified.
-    if (!line_color.empty()) {
-        oss << " lc rgb \"" << line_color << "\"";
+    if (line_color.is_set()) {
+        oss << " lc rgb \"" << line_color.to_string() << "\"";
     }
 
     // Add line style options only if the plot style supports lines.
@@ -906,8 +906,8 @@ Gnuplot &Gnuplot::plot_equation3d(const std::string &equation, const std::string
     }
 
     // Include line color if it is specified.
-    if (!line_color.empty()) {
-        oss << " lc rgb \"" << line_color << "\"";
+    if (line_color.is_set()) {
+        oss << " lc rgb \"" << line_color.to_string() << "\"";
     }
 
     // Add line style options only if the plot style supports lines.
@@ -1099,7 +1099,13 @@ Gnuplot &Gnuplot::set_line_style(line_style_t style, const std::string &custom_p
 
 Gnuplot &Gnuplot::set_line_color(const std::string &color)
 {
-    line_color = color;
+    line_color = gpcpp::Color(color);
+    return *this;
+}
+
+Gnuplot &Gnuplot::set_line_color(int r, int g, int b)
+{
+    line_color = gpcpp::Color(r, g, b);
     return *this;
 }
 

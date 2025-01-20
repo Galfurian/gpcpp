@@ -28,6 +28,8 @@
 #error unsupported or unknown operating system
 #endif
 
+#include "gpcpp/color.hpp"
+
 namespace gpcpp
 {
 
@@ -184,7 +186,7 @@ public:
     /// @brief Sets the default terminal type for displaying plots.
     /// @param type The terminal type to set (default is "wxt").
     /// @return void
-    Gnuplot & set_terminal(terminal_type_t type = terminal_type_t::wxt);
+    Gnuplot &set_terminal(terminal_type_t type = terminal_type_t::wxt);
 
     /// @brief Sends a command to the Gnuplot session.
     /// @param cmdstr The command string to send to Gnuplot.
@@ -233,6 +235,13 @@ public:
     /// @param color The line color (e.g., "red", "#ff0000").
     /// @return Reference to the Gnuplot object for chaining.
     Gnuplot &set_line_color(const std::string &color);
+
+    /// @brief Sets the line color for the Gnuplot plot using RGB values.
+    /// @param r The red component of the color (0 to 255).
+    /// @param g The green component of the color (0 to 255).
+    /// @param b The blue component of the color (0 to 255).
+    /// @return Reference to the Gnuplot object for chaining.
+    Gnuplot &set_line_color(int r, int g, int b);
 
     /// @brief Sets the style of points used in plots.
     /// @param style An integer specifying the Gnuplot point style.
@@ -665,7 +674,7 @@ private:
     /// @brief Define the line style for Gnuplot plots
     std::string line_style;
     /// @brief The line color in Gnuplot-compatible format (e.g., "red", "#ff0000").
-    std::string line_color;
+    gpcpp::Color line_color;
     /// @brief Specifies the point style.
     point_style_t point_style;
     /// @brief Specifies the size of points.

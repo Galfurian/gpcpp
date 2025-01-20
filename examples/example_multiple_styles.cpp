@@ -41,7 +41,7 @@ int main()
 
         // Plot w = 2 * x^2 as a line
         .set_plot_style(plot_style_t::lines)
-        .set_line_color("blue")
+        .set_line_color("#228B22")
         .set_line_width(2.0)
         .plot_xy(x, w, "w = 2 * x^2");
 
