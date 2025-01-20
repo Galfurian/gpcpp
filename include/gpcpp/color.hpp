@@ -13,13 +13,9 @@ namespace gpcpp
 
 /// @brief A struct that represents a color in RGB format and ensures valid color formatting.
 struct Color {
-    int r; ///< Color red.
-    int g; ///< Color green.
-    int b; ///< Color blue.
-
     /// @brief Default constructor initializes as "unset" state.
     /// @details This constructor sets the RGB values to -1, indicating an unset state.
-    Color() : r(-1), g(-1), b(-1)
+    Color() : r(-1), g(-1), b(-1), a(255)
     {
     }
 
@@ -27,23 +23,26 @@ struct Color {
     /// @param r The red component of the color (0-255).
     /// @param g The green component of the color (0-255).
     /// @param b The blue component of the color (0-255).
+    /// @param a The alpha component (0 = transparent, 255 = opaque).
     /// @details This constructor sets the RGB values to the provided parameters, ensuring they are valid (0-255).
-    Color(int r, int g, int b)
+    Color(int r, int g, int b, int a = 255) : r(-1), g(-1), b(-1), a(255)
     {
-        set_from_rgb(r, g, b);
+        set_from_rgba(r, g, b, a);
     }
 
     /// @brief Constructor from a string (hex format \#RRGGBB or color name).
     /// @param color_str A string representing the color, either in hex format (e.g., "\#ff0000") or as a predefined color name (e.g., "red").
     /// @details This constructor interprets the string as either a hex color code or a predefined color name and sets the RGB values accordingly.
-    Color(const std::string &color_str)
+    Color(const std::string &color_str) : r(-1), g(-1), b(-1), a(255)
     {
-        if (!color_str.empty() && color_str[0] == '#') {
-            // If it's in hex format #RRGGBB
-            set_from_hex(color_str);
-        } else {
-            // If it's a named color, fall back to predefined colors.
-            set_from_name(color_str);
+        if (!color_str.empty()) {
+            if (color_str[0] == '#') {
+                // If it's in hex format #RRGGBB
+                set_from_hex(color_str);
+            } else {
+                // If it's a named color, fall back to predefined colors.
+                set_from_name(color_str);
+            }
         }
     }
 
@@ -51,7 +50,7 @@ struct Color {
     /// @details This function sets all RGB values to -1, marking the color as unset.
     void unset()
     {
-        r = -1, g = -1, b = -1;
+        r = -1, g = -1, b = -1, a = 255;
     }
 
     /// @brief Checks if the color is set.
@@ -65,13 +64,15 @@ struct Color {
     /// @param r The red component of the color (0-255).
     /// @param g The green component of the color (0-255).
     /// @param b The blue component of the color (0-255).
+    /// @param a The alpha component (0-255, default: 255).
     /// @details This function ensures that each RGB component is within the valid range (0-255).
     /// If any component is out of range, it is clamped to the nearest valid value.
-    void set_from_rgb(int r, int g, int b)
+    void set_from_rgba(int r, int g, int b, int a = 255)
     {
         this->r = (r >= 0 && r <= 255) ? r : 0;
         this->g = (g >= 0 && g <= 255) ? g : 0;
         this->b = (b >= 0 && b <= 255) ? b : 0;
+        this->a = (a >= 0 && a <= 255) ? a : 0;
     }
 
     /// @brief Sets the color from a hex code string.
@@ -79,10 +80,18 @@ struct Color {
     /// @details This function extracts the RGB components from the provided hex code and sets the color.
     void set_from_hex(const std::string &hex)
     {
-        if (hex.size() == 7 && hex[0] == '#') {
-            r = std::stoi(hex.substr(1, 2), nullptr, 16);
-            g = std::stoi(hex.substr(3, 2), nullptr, 16);
-            b = std::stoi(hex.substr(5, 2), nullptr, 16);
+        if (hex.size() == 7 && hex[0] == '#') {                           // #RRGGBB
+            this->set_from_rgba(std::stoi(hex.substr(1, 2), nullptr, 16), // Red
+                                std::stoi(hex.substr(3, 2), nullptr, 16), // Green
+                                std::stoi(hex.substr(5, 2), nullptr, 16), // Blue
+                                255                                       // Alpha (fully opaque by default)
+            );
+        } else if (hex.size() == 9 && hex[0] == '#') {                    // #AARRGGBB
+            this->set_from_rgba(std::stoi(hex.substr(3, 2), nullptr, 16), // Red
+                                std::stoi(hex.substr(5, 2), nullptr, 16), // Green
+                                std::stoi(hex.substr(7, 2), nullptr, 16), // Blue
+                                std::stoi(hex.substr(1, 2), nullptr, 16)  // Alpha
+            );
         }
     }
 
@@ -92,27 +101,26 @@ struct Color {
     /// If the name is unrecognized, the color is set to an unset state.
     void set_from_name(const std::string &name)
     {
-        // Predefined color names (you can expand this list)
         if (name == "red") {
-            set_from_rgb(255, 0, 0);
+            this->set_from_rgba(255, 0, 0, 255);
         } else if (name == "green") {
-            set_from_rgb(0, 255, 0);
+            this->set_from_rgba(0, 255, 0, 255);
         } else if (name == "blue") {
-            set_from_rgb(0, 0, 255);
+            this->set_from_rgba(0, 0, 255, 255);
         } else if (name == "yellow") {
-            set_from_rgb(255, 255, 0);
+            this->set_from_rgba(255, 255, 0, 255);
         } else if (name == "cyan") {
-            set_from_rgb(0, 255, 255);
+            this->set_from_rgba(0, 255, 255, 255);
         } else if (name == "magenta") {
-            set_from_rgb(255, 0, 255);
+            this->set_from_rgba(255, 0, 255, 255);
         } else if (name == "black") {
-            set_from_rgb(0, 0, 0);
+            this->set_from_rgba(0, 0, 0, 255);
         } else if (name == "white") {
-            set_from_rgb(255, 255, 255);
+            this->set_from_rgba(255, 255, 255, 255);
         } else if (name == "gray") {
-            set_from_rgb(128, 128, 128);
+            this->set_from_rgba(128, 128, 128, 255);
         } else {
-            r = g = b = -1; // Unset state if unknown color name
+            unset();
         }
     }
 
@@ -123,19 +131,17 @@ struct Color {
     {
         if (!is_set())
             return ""; // Return empty string if color is unset
-        return "#" + format_hex(r) + format_hex(g) + format_hex(b);
+
+        char buf[11];
+        snprintf(buf, sizeof(buf), "#%02X%02X%02X%02X", (255 - a), r, g, b);
+        return std::string(buf);
     }
 
 private:
-    /// @brief Formats an integer as a two-character hex string.
-    /// @param value The integer to format (0-255).
-    /// @return A string representing the integer as a two-character hex string.
-    static inline std::string format_hex(int value)
-    {
-        char buf[3];
-        snprintf(buf, sizeof(buf), "%02x", value);
-        return std::string(buf);
-    }
+    int r; ///< Color red.
+    int g; ///< Color green.
+    int b; ///< Color blue.
+    int a; ///< Alpha component (0 = fully transparent, 255 = fully opaque for the user).
 };
 
 } // namespace gpcpp

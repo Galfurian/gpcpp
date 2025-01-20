@@ -132,6 +132,10 @@ if(BUILD_EXAMPLES)
     target_include_directories(gpcpp_example_save_plot_to_file PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
     target_link_libraries(gpcpp_example_save_plot_to_file PUBLIC gpcpp)
 
+    add_executable(gpcpp_example_custom_grid examples/example_custom_grid.cpp)
+    target_include_directories(gpcpp_example_custom_grid PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
+    target_link_libraries(gpcpp_example_custom_grid PUBLIC gpcpp)
+
 endif()
 
 # -----------------------------------------------------------------------------

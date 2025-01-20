@@ -81,8 +81,16 @@ enum class contour_param_t {
     discrete,  ///< Specific discrete contour levels
 };
 
+/// @brief Enumeration to represent different grid types in Gnuplot.
+enum class grid_type_t {
+    major, ///< Major grid (default).
+    minor, ///< Minor grid.
+    polar  ///< Polar grid.
+};
+
 /// @brief Enumeration for Gnuplot line styles.
 enum class line_style_t {
+    none,         ///< No line style set.
     solid,        ///< Solid line (default)
     dashed,       ///< Dashed line
     dotted,       ///< Dotted line
@@ -263,6 +271,46 @@ public:
     /// @brief Enables the grid for plots.
     /// @return A reference to the current Gnuplot object.
     Gnuplot &set_grid();
+
+    /// @brief Sets the major tics for the x-axis.
+    /// @param major_step The step size for major tics on the x-axis.
+    /// @return Gnuplot& Reference to the Gnuplot object.
+    Gnuplot &set_xtics_major(double major_step);
+
+    /// @brief Sets the minor tics for the x-axis.
+    /// @param minor_intervals The number of minor intervals between major tics.
+    /// @return Gnuplot& Reference to the Gnuplot object.
+    Gnuplot &set_xtics_minor(int minor_intervals);
+
+    /// @brief Sets the major tics for the y-axis.
+    /// @param major_step The step size for major tics on the y-axis.
+    /// @return Gnuplot& Reference to the Gnuplot object.
+    Gnuplot &set_ytics_major(double major_step);
+
+    /// @brief Sets the minor tics for the y-axis.
+    /// @param minor_intervals The number of minor intervals between major tics.
+    /// @return Gnuplot& Reference to the Gnuplot object.
+    Gnuplot &set_ytics_minor(int minor_intervals);
+
+    /// @brief Sets the line style for a specified grid type.
+    /// @param grid_type The type of grid to configure (major, minor, or polar).
+    /// @param style The line style for the grid (e.g., solid, dashed).
+    /// @param color The line color for the grid.
+    /// @param width The line width for the grid.
+    /// @param custom_dash The custom dash pattern (only used if style is `custom`).
+    /// @return Gnuplot& Reference to the Gnuplot object.
+    Gnuplot &set_grid_line_style(grid_type_t grid_type,
+                                 line_style_t style,
+                                 const Color &color,
+                                 double width,
+                                 const std::string &custom_dash = "");
+
+    /// @brief Builds and applies the grid configuration.
+    /// @param tics A string specifying which tics to enable (e.g., "xtics ytics").
+    /// @param angle The angle for the polar grid (optional, -1 to disable).
+    /// @param layer Specify "front" or "back" for the grid layer.
+    /// @return Gnuplot& Reference to the Gnuplot object.
+    Gnuplot &apply_grid(const std::string &tics = "xtics ytics", int angle = -1, const std::string &layer = "back");
 
     /// @brief Disables the grid for plots.
     /// @details The grid is not enabled by default.
@@ -701,6 +749,24 @@ private:
         double increment_end   = 1.0;                    ///< End of increment range
         int levels             = 10;                     ///< Number of contour levels
     } contour;
+
+    struct {
+        line_style_t major_style; ///< Line style for the major grid.
+        Color major_color;        ///< Color for the major grid lines.
+        double major_width;       ///< Line width for the major grid lines.
+
+        line_style_t minor_style; ///< Line style for the minor grid.
+        Color minor_color;        ///< Color for the minor grid lines.
+        double minor_width;       ///< Line width for the minor grid lines.
+
+        int polar_angle; ///< Angle for polar grids (-1 means disabled).
+
+        std::string grid_layer; ///< Layer for the grid ("front" or "back").
+
+        bool vertical_lines; ///< Enable or disable vertical grid lines.
+
+        std::string active_tics; ///< Active tics for the grid.
+    } grid;
 
     /// @brief list of created tmpfiles.
     std::vector<std::string> tmpfile_list;

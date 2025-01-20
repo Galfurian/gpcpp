@@ -227,7 +227,7 @@ Gnuplot &Gnuplot::plot_x(const X &x, const std::string &title)
     }
     // Include line color if it is specified.
     if (line_color.is_set()) {
-        oss << " lc rgb \"" << line_color.to_string() << "\"";
+        oss << " lc rgbcolor \"" << line_color.to_string() << "\"";
     }
     // Add line style options only if the plot style supports lines.
     if (is_line_style(plot_style)) {
@@ -249,6 +249,7 @@ Gnuplot &Gnuplot::plot_x(const X &x, const std::string &title)
             oss << " ps " << point_size;
         }
     }
+    std::cout << oss.str() << "\n";
     // Send the constructed command to Gnuplot for execution
     this->send_cmd(oss.str());
 
@@ -353,7 +354,7 @@ Gnuplot &Gnuplot::plot_x(const std::vector<X> &datasets, const std::vector<std::
                 oss << " lw " << line_width;
             }
             if (line_color.is_set()) {
-                oss << " lc rgb \"" << line_color.to_string() << "\"";
+                oss << " lc rgbcolor \"" << line_color.to_string() << "\"";
             }
         }
 
@@ -443,7 +444,7 @@ Gnuplot &Gnuplot::plot_xy(const X &x, const Y &y, const std::string &title)
     }
     // Include line color if it is specified.
     if (line_color.is_set()) {
-        oss << " lc rgb \"" << line_color.to_string() << "\"";
+        oss << " lc rgbcolor \"" << line_color.to_string() << "\"";
     }
     // Add line style options only if the plot style supports lines.
     if (is_line_style(plot_style)) {
@@ -465,6 +466,7 @@ Gnuplot &Gnuplot::plot_xy(const X &x, const Y &y, const std::string &title)
             oss << " ps " << point_size;
         }
     }
+    std::cout << oss.str() << "\n";
     // Send the constructed command to Gnuplot for execution
     this->send_cmd(oss.str());
 
@@ -537,7 +539,7 @@ Gnuplot::plot_xy_erorrbar(const X &x, const Y &y, const E &dy, erorrbar_style_t 
 
     // Include line color if it is specified.
     if (line_color.is_set()) {
-        oss << " lc rgb \"" << line_color.to_string() << "\"";
+        oss << " lc rgbcolor \"" << line_color.to_string() << "\"";
     }
 
     // Add line width if specified.
@@ -634,7 +636,7 @@ Gnuplot &Gnuplot::plot_xyz(const X &x, const Y &y, const Z &z, const std::string
 
     // Include line color if it is specified.
     if (line_color.is_set()) {
-        oss << " lc rgb \"" << line_color.to_string() << "\"";
+        oss << " lc rgbcolor \"" << line_color.to_string() << "\"";
     }
 
     // Add line style options only if the plot style supports lines.
@@ -739,7 +741,7 @@ Gnuplot &Gnuplot::plot_3d_grid(const X &x, const Y &y, const Z &z, const std::st
 
     // Include line color if it is specified.
     if (line_color.is_set()) {
-        oss << " lc rgb \"" << line_color.to_string() << "\"";
+        oss << " lc rgbcolor \"" << line_color.to_string() << "\"";
     }
 
     // Add line style options only if the plot style supports lines.
@@ -795,7 +797,7 @@ Gnuplot &Gnuplot::plot_slope(const double a, const double b, const std::string &
 
     // Include line color if it is specified.
     if (line_color.is_set()) {
-        oss << " lc rgb \"" << line_color.to_string() << "\"";
+        oss << " lc rgbcolor \"" << line_color.to_string() << "\"";
     }
 
     // Add line style options only if the plot style supports lines.
@@ -848,7 +850,7 @@ Gnuplot &Gnuplot::plot_equation(const std::string &equation, const std::string &
 
     // Include line color if it is specified.
     if (line_color.is_set()) {
-        oss << " lc rgb \"" << line_color.to_string() << "\"";
+        oss << " lc rgbcolor \"" << line_color.to_string() << "\"";
     }
 
     // Add line style options only if the plot style supports lines.
@@ -904,7 +906,7 @@ Gnuplot &Gnuplot::plot_equation3d(const std::string &equation, const std::string
 
     // Include line color if it is specified.
     if (line_color.is_set()) {
-        oss << " lc rgb \"" << line_color.to_string() << "\"";
+        oss << " lc rgbcolor \"" << line_color.to_string() << "\"";
     }
 
     // Add line style options only if the plot style supports lines.
@@ -1261,7 +1263,133 @@ Gnuplot &Gnuplot::set_grid()
     return *this;
 }
 
-/// grid is not set by default
+/// @brief Sets the major tics for the x-axis.
+Gnuplot &Gnuplot::set_xtics_major(double major_step)
+{
+    if (major_step <= 0) {
+        throw std::invalid_argument("Major step size for x-axis must be positive.");
+    }
+
+    std::string cmd = "set xtics " + std::to_string(major_step);
+    this->send_cmd(cmd);
+    return *this;
+}
+
+/// @brief Sets the minor tics for the x-axis.
+Gnuplot &Gnuplot::set_xtics_minor(int minor_intervals)
+{
+    if (minor_intervals <= 0) {
+        throw std::invalid_argument("Number of minor intervals for x-axis must be positive.");
+    }
+
+    std::string cmd = "set mxtics " + std::to_string(minor_intervals);
+    this->send_cmd(cmd);
+    return *this;
+}
+
+/// @brief Sets the major tics for the y-axis.
+Gnuplot &Gnuplot::set_ytics_major(double major_step)
+{
+    if (major_step <= 0) {
+        throw std::invalid_argument("Major step size for y-axis must be positive.");
+    }
+
+    std::string cmd = "set ytics " + std::to_string(major_step);
+    this->send_cmd(cmd);
+    return *this;
+}
+
+/// @brief Sets the minor tics for the y-axis.
+Gnuplot &Gnuplot::set_ytics_minor(int minor_intervals)
+{
+    if (minor_intervals <= 0) {
+        throw std::invalid_argument("Number of minor intervals for y-axis must be positive.");
+    }
+
+    std::string cmd = "set mytics " + std::to_string(minor_intervals);
+    this->send_cmd(cmd);
+    return *this;
+}
+
+Gnuplot &Gnuplot::set_grid_line_style(grid_type_t grid_type,
+                                      line_style_t style,
+                                      const Color &color,
+                                      double width,
+                                      const std::string &custom_dash)
+{
+    // Define the style line index based on grid type
+    int line_index = (grid_type == grid_type_t::major) ? 1 : (grid_type == grid_type_t::minor) ? 2 : 3;
+
+    // Define default linetype (solid)
+    int linetype = 1;
+
+    // Define custom dashtype based on the line style
+    std::string dashtype;
+    switch (style) {
+    case line_style_t::solid:
+        linetype = 1;
+        break;
+    case line_style_t::dashed:
+        dashtype = "50, 25";
+        break;
+    case line_style_t::dotted:
+        dashtype = "1, 1";
+        break;
+    case line_style_t::dash_dot:
+        dashtype = "10, 5, 1, 5";
+        break;
+    case line_style_t::dash_dot_dot:
+        dashtype = "10, 5, 1, 5, 1, 5";
+        break;
+    case line_style_t::custom:
+        if (!custom_dash.empty()) {
+            dashtype = custom_dash; // Use the provided custom dash pattern
+        }
+        break;
+    default:
+        break;
+    }
+
+    // Build the Gnuplot command
+    std::string cmd = "set style line " + std::to_string(line_index); // Line style index
+    cmd += " lt " + std::to_string(linetype);
+    if (!dashtype.empty()) {
+        cmd += " dt (" + dashtype + ")";
+    }
+    if (color.is_set()) {
+        cmd += " lc rgb \"" + color.to_string() + "\"";
+    }
+    cmd += " lw " + std::to_string(width);
+
+    // Send the command to Gnuplot
+    this->send_cmd(cmd);
+
+    return *this;
+}
+
+Gnuplot &Gnuplot::apply_grid(const std::string &tics, int angle, const std::string &layer)
+{
+    std::string cmd = "set grid " + tics;
+
+    if (layer == "front" || layer == "back") {
+        cmd += " " + grid.grid_layer;
+    }
+
+    // Apply major grid style
+    cmd += " ls 1"; // Use line style 1 for major grid
+
+    // Apply minor grid style
+    cmd += ", ls 2"; // Use line style 2 for minor grid
+
+    // Add polar grid if applicable
+    if (angle >= 0) {
+        cmd += " polar " + std::to_string(angle);
+    }
+
+    this->send_cmd(cmd);
+    return *this;
+}
+
 Gnuplot &Gnuplot::unset_grid()
 {
     this->send_cmd("unset grid");
