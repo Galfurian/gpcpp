@@ -12,7 +12,7 @@ int main()
     using namespace gpcpp;
 
     // Create a Gnuplot instance
-    Gnuplot gnuplot;
+    Gnuplot gnuplot(true);
 
     // Prepare data for plotting
     std::vector<double> x, y;
@@ -32,7 +32,7 @@ int main()
     // Second plot: Points plot in the bottom half of the window
     gnuplot.set_origin_and_size(0, 0, 1, 0.5); // Set origin and size for the second plot
     gnuplot.set_title("Plot 2: Points Plot")
-        .set_point_style(point_style_t::filled_circle) // Set point style to filled circle
+        .set_point_type(point_type_t::filled_circle) // Set point type to filled circle
         .set_line_width(0)                             // No line, only points
         .plot_xy(x, y);
 

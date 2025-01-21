@@ -14,7 +14,7 @@ int main()
     using namespace gpcpp;
 
     // Create a Gnuplot instance
-    Gnuplot gnuplot;
+    Gnuplot gnuplot(true);
 
     // Prepare data for plotting
     std::vector<double> x, y;
@@ -34,13 +34,13 @@ int main()
         .set_ytics_major(1)
         .set_ytics_minor(2)
         // Configure major grid.
-        .set_grid_line_style(grid_type_t::major, line_style_t::solid, Color("#88000000"), 1.0)
+        .set_grid_line_type(grid_type_t::major, line_type_t::solid, Color("#88FF0000"), 1.0)
         // Configure minor grid.
-        .set_grid_line_style(grid_type_t::minor, line_style_t::dashed, Color("gray"), 0.5)
+        .set_grid_line_type(grid_type_t::minor, line_type_t::dashed, Color("gray"), 0.5)
         // Apply grid configuration.
-        .apply_grid("xtics ytics mxtics mytics", -1, "back")
-        .set_plot_style(plot_style_t::lines) // Set the plot style to line.
-        .set_line_style(line_style_t::solid) // Set the line style for data.
+        .apply_grid("xtics ytics mxtics mytics", "back")
+        .set_plot_type(plot_type_t::lines) // Set the plot type to line.
+        .set_line_type(line_type_t::solid)   // Set the line type for data.
         .set_line_color("green")             // Set the data line color to green.
         .set_line_width(2.0);                // Set line width.
 

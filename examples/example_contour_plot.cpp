@@ -12,7 +12,7 @@ int main()
     using namespace gpcpp;
 
     // Create a Gnuplot instance
-    Gnuplot gnuplot;
+    Gnuplot gnuplot(true);
 
     // Define grid size for the 3D plot
     const unsigned int grid_size = 50;

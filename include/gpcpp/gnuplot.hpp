@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <unordered_set>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -29,160 +30,18 @@
 #endif
 
 #include "gpcpp/color.hpp"
+#include "gpcpp/defines.hpp"
+#include "gpcpp/id_manager.hpp"
+#include "gpcpp/box_style.hpp"
 
 namespace gpcpp
 {
-
-/// @brief Enum representing the various plotting styles available in Gnuplot.
-enum class plot_style_t {
-    none,          ///< Default fallback style (points).
-    lines,         ///< Lines connecting the data points.
-    points,        ///< Individual data points.
-    lines_points,  ///< Lines connecting data points with points marked.
-    impulses,      ///< Vertical lines from the x-axis to the data points.
-    dots,          ///< Small dots for data points.
-    steps,         ///< Stepwise connection of data points.
-    fsteps,        ///< Finite steps between data points.
-    histeps,       ///< Histogram-like steps between data points.
-    boxes,         ///< Boxes for histogram-like data.
-    filled_curves, ///< Filled areas under curves.
-    histograms,    ///< Histograms.
-};
-
-/// @brief The style of error bars.
-enum class erorrbar_style_t {
-    yerrorbars, ///< Error bars along the y-axis.
-    xerrorbars, ///< Error bars along the x-axis.
-};
-
-/// @brief Enum representing the smoothing styles available in Gnuplot.
-enum class smooth_style_t {
-    none,      ///< No smoothing (default).
-    unique,    ///< Unique smoothing.
-    frequency, ///< Frequency-based smoothing.
-    csplines,  ///< Cubic spline interpolation.
-    acsplines, ///< Approximation cubic splines.
-    bezier,    ///< Bezier curve smoothing.
-    sbezier,   ///< Subdivided Bezier smoothing.
-};
-
-/// @brief Contour type options for Gnuplot
-enum class contour_type_t {
-    none,    ///< Disables contouring
-    base,    ///< Contours on the base (XY-plane)
-    surface, ///< Contours on the surface
-    both,    ///< Contours on both base and surface
-};
-
-/// @brief Contour parameter options for Gnuplot
-enum class contour_param_t {
-    levels,    ///< Number of contour levels
-    increment, ///< Contour increment settings
-    discrete,  ///< Specific discrete contour levels
-};
-
-/// @brief Enumeration to represent different grid types in Gnuplot.
-enum class grid_type_t {
-    major, ///< Major grid (default).
-    minor, ///< Minor grid.
-    polar  ///< Polar grid.
-};
-
-/// @brief Enumeration for Gnuplot line styles.
-enum class line_style_t {
-    none,         ///< No line style set.
-    solid,        ///< Solid line (default)
-    dashed,       ///< Dashed line
-    dotted,       ///< Dotted line
-    dash_dot,     ///< Dash-dot pattern
-    dash_dot_dot, ///< Dash-dot-dot pattern
-    custom        ///< Custom dash pattern
-};
-
-/// @brief Enum representing the various predefined point styles available in
-/// Gnuplot
-enum class point_style_t {
-    none,                     // No point (invisible).
-    plus,                     // Plus (+) shape.
-    cross,                    // Cross (×) shape.
-    asterisk,                 // Asterisk (*) shape.
-    open_square,              // Open square (□).
-    filled_square,            // Filled square (■).
-    open_circle,              // Open circle (○).
-    filled_circle,            // Filled circle (●).
-    open_triangle,            // Open triangle (△).
-    filled_triangle,          // Filled triangle (▲).
-    open_inverted_triangle,   // Open inverted triangle (▽).
-    filled_inverted_triangle, // Filled inverted triangle (▼).
-    open_diamond,             // Open diamond (◇).
-    filled_diamond,           // Filled diamond (◆).
-};
-
-/// @brief Enumeration of gnuplot terminal types.
-/// @details This enum class represents all terminal types supported by gnuplot
-/// as per the provided list. Each terminal type corresponds to a specific
-/// plotting or output format.
-enum class terminal_type_t {
-    wxt,          ///< wxWidgets cross-platform interactive terminal
-    cairolatex,   ///< LaTeX picture environment using graphicx package and Cairo backend
-    canvas,       ///< HTML Canvas object
-    cgm,          ///< Computer Graphics Metafile
-    context,      ///< ConTeXt with MetaFun (for PDF documents)
-    domterm,      ///< DomTerm terminal emulator with embedded SVG
-    dpu414,       ///< Seiko DPU-414 thermal printer
-    dumb,         ///< ASCII art for anything that prints text
-    dxf,          ///< DXF file for AutoCAD
-    emf,          ///< Enhanced Metafile format
-    epscairo,     ///< EPS terminal based on Cairo
-    epslatex,     ///< LaTeX picture environment using graphicx package
-    epson_180dpi, ///< Epson LQ-style 180-dot per inch (24 pin) printers
-    epson_60dpi,  ///< Epson-style 60-dot per inch printers
-    epson_lx800,  ///< Epson LX-800, Star NL-10, NX-1000, PROPRINTER
-    fig,          ///< FIG graphics language for XFIG graphics editor
-    gif,          ///< GIF images using libgd and TrueType fonts
-    hp500c,       ///< HP DeskJet 500c
-    hpdj,         ///< HP DeskJet 500
-    hpgl,         ///< HP7475 and relatives
-    hpljii,       ///< HP Laserjet series II
-    hppj,         ///< HP PaintJet and HP3630
-    jpeg,         ///< JPEG images using libgd and TrueType fonts
-    lua,          ///< Lua generic terminal driver
-    mf,           ///< Metafont plotting standard
-    mp,           ///< MetaPost plotting standard
-    nec_cp6,      ///< NEC printer CP6, Epson LQ-800
-    okidata,      ///< OKIDATA 320/321 Standard
-    pbm,          ///< Portable bitmap
-    pcl5,         ///< PCL5e/PCL5c printers using HP-GL/2
-    pdfcairo,     ///< PDF terminal based on Cairo
-    pict2e,       ///< LaTeX2e picture environment
-    png,          ///< PNG images using libgd and TrueType fonts
-    pngcairo,     ///< PNG terminal based on Cairo
-    postscript,   ///< PostScript graphics, including EPSF embedded files
-    pslatex,      ///< LaTeX picture environment with PostScript \\specials
-    pstex,        ///< Plain TeX with PostScript \\specials
-    pstricks,     ///< LaTeX picture environment with PSTricks macros
-    sixelgd,      ///< Sixel using libgd and TrueType fonts
-    sixeltek,     ///< Sixel output using bitmap graphics
-    starc,        ///< Star Color Printer
-    svg,          ///< W3C Scalable Vector Graphics
-    tandy_60dpi,  ///< Tandy DMP-130 series 60-dot per inch graphics
-    tek40xx,      ///< Tektronix 4010 and others; most TEK emulators
-    tek410x,      ///< Tektronix 4106, 4107, 4109 and 420X terminals
-    texdraw,      ///< LaTeX texdraw environment
-    tikz,         ///< TeX TikZ graphics macros via the Lua script driver
-    tkcanvas,     ///< Tk canvas widget
-    unknown,      ///< Unknown terminal type - not a plotting device
-    vttek,        ///< VT-like Tek40xx terminal emulator
-    x11,          ///< X11 Window System interactive terminal
-    xlib,         ///< X11 Window System (dump of gnuplot_x11 command stream)
-    xterm         ///< Xterm Tektronix 4014 Mode
-};
 
 /// @brief Main Gnuplot class for managing plots.
 class Gnuplot {
 public:
     /// @brief Constructs a Gnuplot session.
-    Gnuplot();
+    Gnuplot(bool debug = false);
 
     /// @brief Destructor to clean up and delete temporary files.
     ~Gnuplot();
@@ -226,20 +85,20 @@ public:
     Gnuplot &set_output(const std::string filename);
 
     /// Sets the plotting style for the current Gnuplot session.
-    /// @param style The plot_style_t enum value representing the desired plotting style.
+    /// @param style The plot_type_t enum value representing the desired plotting style.
     /// @return Reference to the current Gnuplot object.
-    Gnuplot &set_plot_style(plot_style_t style);
+    Gnuplot &set_plot_type(plot_type_t style);
 
     /// @brief Sets the smoothing style for the current Gnuplot session.
-    /// @param style The smooth_style enum value representing the desired smoothing style.
+    /// @param style The smooth_type enum value representing the desired smoothing style.
     /// @return Reference to the current Gnuplot object.
-    Gnuplot &set_smooth_style(smooth_style_t style = smooth_style_t::csplines);
+    Gnuplot &set_smooth_type(smooth_type_t style = smooth_type_t::csplines);
 
     /// @brief Sets the line style for the Gnuplot plot.
     /// @param style The line style to set (solid, dashed, custom, etc.).
     /// @param custom_pattern Optional custom dash pattern if the style is set to custom.
     /// @return Reference to the Gnuplot object for chaining.
-    Gnuplot &set_line_style(line_style_t style, const std::string &custom_pattern = "");
+    Gnuplot &set_line_type(line_type_t style, const std::string &custom_pattern = "");
 
     /// @brief Sets the line color for the Gnuplot plot.
     /// @param color The line color (e.g., "red", "#ff0000").
@@ -256,7 +115,7 @@ public:
     /// @brief Sets the style of points used in plots.
     /// @param style An integer specifying the Gnuplot point style.
     /// @return Reference to the current Gnuplot object.
-    Gnuplot &set_point_style(point_style_t style);
+    Gnuplot &set_point_type(point_type_t style);
 
     /// @brief Sets the size of points used in plots.
     /// @param size A positive value specifying the Gnuplot point size.
@@ -299,18 +158,19 @@ public:
     /// @param width The line width for the grid.
     /// @param custom_dash The custom dash pattern (only used if style is `custom`).
     /// @return Gnuplot& Reference to the Gnuplot object.
-    Gnuplot &set_grid_line_style(grid_type_t grid_type,
-                                 line_style_t style,
-                                 const Color &color,
-                                 double width,
-                                 const std::string &custom_dash = "");
+    Gnuplot &set_grid_line_type(grid_type_t grid_type,
+                                line_type_t style,
+                                const Color &color,
+                                double width,
+                                const std::string &custom_dash = "");
 
     /// @brief Builds and applies the grid configuration.
     /// @param tics A string specifying which tics to enable (e.g., "xtics ytics").
-    /// @param angle The angle for the polar grid (optional, -1 to disable).
     /// @param layer Specify "front" or "back" for the grid layer.
+    /// @param vertical_lines Enable or disable vertical grid lines.
     /// @return Gnuplot& Reference to the Gnuplot object.
-    Gnuplot &apply_grid(const std::string &tics = "xtics ytics", int angle = -1, const std::string &layer = "back");
+    Gnuplot &
+    apply_grid(const std::string &tics = "xtics ytics", const std::string &layer = "back", bool vertical_lines = true);
 
     /// @brief Disables the grid for plots.
     /// @details The grid is not enabled by default.
@@ -519,6 +379,56 @@ public:
     /// @return A reference to the current Gnuplot object.
     Gnuplot &set_cbrange(const double iFrom, const double iTo);
 
+    /// @brief Sets a vertical line at a given x position..
+    /// @param x The x-coordinate where the vertical line should be placed.
+    /// @return Reference to the Gnuplot object for chaining.
+    Gnuplot &plot_vertical_line(double x);
+
+    /// @brief Sets a horizontal line at a given y position.
+    /// @param y The y-coordinate where the horizontal line should be placed.
+    /// @return Reference to the Gnuplot object for chaining.
+    Gnuplot &plot_horizontal_line(double y);
+
+    /// @brief Sets a vertical line over a range of y values at a given x position.
+    /// @param x The x-coordinate where the vertical line should be placed.
+    /// @param y_min The minimum y-coordinate of the range.
+    /// @param y_max The maximum y-coordinate of the range.
+    /// @return Reference to the Gnuplot object for chaining.
+    Gnuplot &plot_vertical_range(double x, double y_min, double y_max);
+
+    /// @brief Sets a horizontal line over a range of x values at a given y position.
+    /// @param y The y-coordinate where the horizontal line should be placed.
+    /// @param x_min The starting x-coordinate of the range.
+    /// @param x_max The ending x-coordinate of the range.
+    /// @return Reference to the Gnuplot object for chaining.
+    Gnuplot &plot_horizontal_range(double y, double x_min, double x_max);
+
+    /// @brief Adds a label at a specific point on the plot with customizable alignment, optional point, and optional box.
+    ///
+    /// @param x The x-coordinate of the label.
+    /// @param y The y-coordinate of the label.
+    /// @param label The text of the label.
+    /// @param font_size The font size for the label text (optional).
+    /// @param color The color of the label (optional).
+    /// @param offset_x X-axis offset for label positioning (optional).
+    /// @param offset_y Y-axis offset for label positioning (optional).
+    /// @param horizontal_alignment The horizontal alignment for the label (optional).
+    /// @param rotation The rotation of the label text in degrees (optional).
+    /// @param point_type Optionally display a point at the label (optional).
+    /// @param box_style The box style to apply to the label (optional).
+    /// @return Reference to the Gnuplot object for chaining.
+    Gnuplot &add_label(double x,
+                       double y,
+                       const std::string &label,
+                       double font_size              = 12.0,
+                       const std::string &color      = "black",
+                       double offset_x               = 0.0,
+                       double offset_y               = 0.0,
+                       halign_t horizontal_alignment = halign_t::center,
+                       double rotation               = 0.0,
+                       bool point_type               = false,
+                       const box_style_t &box_style  = box_style_t());
+
     /// @brief Plots a single vector of data.
     /// @tparam X The type of the data in the vector.
     /// @param x The data to plot.
@@ -559,7 +469,7 @@ public:
     Gnuplot &plot_xy_erorrbar(const X &x,
                               const Y &y,
                               const E &dy,
-                              erorrbar_style_t style   = erorrbar_style_t::yerrorbars,
+                              erorrbar_type_t style    = erorrbar_type_t::yerrorbars,
                               const std::string &title = "");
 
     /// @brief Plots x, y, z triples of data.
@@ -669,50 +579,8 @@ private:
     /// @return `true` if the file exists and satisfies the mode, `false` otherwise.
     static bool file_exists(const std::string &filename, int mode = 0);
 
-    /// @brief Checks if the specified style is a line style.
-    /// @param style The plot style to check.
-    /// @return true if the style is a line style, false otherwise.
-    static bool is_line_style(plot_style_t style);
-
-    /// @brief Checks if the specified style is a point style.
-    /// @param style The plot style to check.
-    /// @return true if the style is a point style, false otherwise.
-    static bool is_point_style(plot_style_t style);
-
-    /// @brief Converts a plot_style_t value to its corresponding Gnuplot string representation.
-    /// @param style The plotting style as a plot_style_t enum value.
-    /// @return A string representing the corresponding Gnuplot style.
-    std::string plot_style_to_string(plot_style_t style);
-
-    /// Converts a smooth_style value to its corresponding Gnuplot string.
-    /// @param style The smoothing style to convert.
-    /// @return A string representing the Gnuplot smoothing style.
-    std::string smooth_style_to_string(smooth_style_t style);
-
-    /// @brief Converts a line_style_t value to a Gnuplot-compatible string.
-    /// @param style The line style enumeration.
-    /// @param custom_pattern Optional custom dash pattern (e.g., "10,5,2,5").
-    /// @return Gnuplot-compatible string for the line style.
-    std::string line_style_to_string(line_style_t style, const std::string &custom_pattern = "");
-
-    /// @brief Converts a point_style_t value to a Gnuplot-compatible string.
-    /// @param style The point style enumeration.
-    /// @return Gnuplot-compatible string for the point style.
-    std::string point_style_to_string(point_style_t style = point_style_t::none);
-
-    /// @brief Converts an erorrbar_style_t value to a Gnuplot-compatible string.
-    /// @param style The error bar style enumeration.
-    /// @return Gnuplot-compatible string for the error bar style.
-    std::string errorbars_to_string(erorrbar_style_t style = erorrbar_style_t::yerrorbars);
-
-    /// @brief Converts a terminal_type_t enum value to a corresponding
-    /// gnuplot-compatible string.
-    /// @details This function takes a terminal_type_t enum value and returns
-    /// the string representation accepted by gnuplot. For custom terminals, the
-    /// custom options can be appended.
-    /// @param terminal The terminal_type_t enum value.
-    /// @return A string representing the gnuplot terminal type.
-    std::string terminal_type_to_string(terminal_type_t type);
+    /// @brief Enables debug.
+    bool debug;
 
     /// @brief pointer to the stream that can be used to write to the pipe
     FILE *gnuplot_pipe;
@@ -727,16 +595,16 @@ private:
 
     /// The line width for plotted lines.
     double line_width;
-    /// The style used for plotting data (e.g., lines, points, histograms).
-    plot_style_t plot_style;
-    /// The smoothing style applied to the data (e.g., csplines, bezier).
-    smooth_style_t smooth_style;
-    /// @brief Define the line style for Gnuplot plots
-    std::string line_style;
+    /// The type used for plotting data (e.g., lines, points, histograms).
+    plot_type_t plot_type;
+    /// The smoothing type applied to the data (e.g., csplines, bezier).
+    smooth_type_t smooth_type;
+    /// @brief Define the line type for Gnuplot plots
+    std::string line_type;
     /// @brief The line color in Gnuplot-compatible format (e.g., "red", "#ff0000").
     gpcpp::Color line_color;
-    /// @brief Specifies the point style.
-    point_style_t point_style;
+    /// @brief Specifies the point type.
+    point_type_t point_type;
     /// @brief Specifies the size of points.
     double point_size = -1.0;
 
@@ -750,26 +618,13 @@ private:
         int levels             = 10;                     ///< Number of contour levels
     } contour;
 
-    struct {
-        line_style_t major_style; ///< Line style for the major grid.
-        Color major_color;        ///< Color for the major grid lines.
-        double major_width;       ///< Line width for the major grid lines.
-
-        line_style_t minor_style; ///< Line style for the minor grid.
-        Color minor_color;        ///< Color for the minor grid lines.
-        double minor_width;       ///< Line width for the minor grid lines.
-
-        int polar_angle; ///< Angle for polar grids (-1 means disabled).
-
-        std::string grid_layer; ///< Layer for the grid ("front" or "back").
-
-        bool vertical_lines; ///< Enable or disable vertical grid lines.
-
-        std::string active_tics; ///< Active tics for the grid.
-    } grid;
-
     /// @brief list of created tmpfiles.
     std::vector<std::string> tmpfile_list;
+
+    /// @brief ID for major grid style.
+    int grid_major_style_id;
+    /// @brief ID for minor grid style.
+    int grid_minor_style_id;
 
     /// @brief number of all tmpfiles (number of tmpfiles restricted)
     static int m_tmpfile_num;
@@ -777,6 +632,11 @@ private:
     static std::string m_gnuplot_filename;
     /// @brief gnuplot path
     static std::string m_gnuplot_path;
+
+    /// @brief Keeps track of the used IDs for the line styles.
+    id_manager_t id_manager_line_style;
+    /// @brief Keeps track of the used IDs for the textbox styles.
+    id_manager_t id_manager_textbox_style;
 };
 
 } // namespace gpcpp

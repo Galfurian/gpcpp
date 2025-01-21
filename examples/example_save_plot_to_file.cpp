@@ -12,7 +12,7 @@ int main()
     using namespace gpcpp;
 
     // Create a Gnuplot instance
-    Gnuplot gnuplot;
+    Gnuplot gnuplot(true);
 
     // Prepare data for plotting
     std::vector<double> x, y;
@@ -27,6 +27,7 @@ int main()
         .set_output("output_plot.png")           // Set output file name
         .set_title("Saving Plot to File")        // Set plot title
         .plot_xy(x, y);                          // Plot the x, y pairs
+
 
     std::cout << "Plot saved to output_plot.png" << std::endl;
 

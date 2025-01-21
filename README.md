@@ -10,7 +10,7 @@ GPCpp is a C++ interface to the powerful plotting utility **Gnuplot**. It allows
 ## Features
 
 - **Cross-platform Support**: Works on Windows, Linux, and macOS (via POSIX-compliant pipes).
-- **Custom Plot Styles**: Supports various plot styles such as points, lines, filled curves, and more.
+- **Custom Plot Types**: Supports various plot types such as points, lines, filled curves, and more.
 - **Logarithmic and Linear Scales**: Easily set logarithmic scales for axes.
 - **Flexible Plotting**: Support for 2D and 3D plotting, including multi-plot setups.
 - **Customizable Colors**: Easily set line colors using named colors or RGB hex values.
@@ -76,7 +76,7 @@ int main() {
     using namespace gpcpp;
 
     // Create a Gnuplot instance
-    Gnuplot gnuplot;
+    Gnuplot gnuplot(true);
 
     // Prepare data for plotting
     std::vector<double> x, y;

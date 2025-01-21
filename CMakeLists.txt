@@ -112,9 +112,9 @@ if(BUILD_EXAMPLES)
     target_include_directories(gpcpp_example_contour_plot PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
     target_link_libraries(gpcpp_example_contour_plot PUBLIC gpcpp)
 
-    add_executable(gpcpp_example_custom_line_style_color examples/example_custom_line_style_color.cpp)
-    target_include_directories(gpcpp_example_custom_line_style_color PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
-    target_link_libraries(gpcpp_example_custom_line_style_color PUBLIC gpcpp)
+    add_executable(gpcpp_example_custom_line_type_color examples/example_custom_line_type_color.cpp)
+    target_include_directories(gpcpp_example_custom_line_type_color PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
+    target_link_libraries(gpcpp_example_custom_line_type_color PUBLIC gpcpp)
 
     add_executable(gpcpp_example_logarithmic_scaling examples/example_logarithmic_scaling.cpp)
     target_include_directories(gpcpp_example_logarithmic_scaling PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
@@ -135,6 +135,10 @@ if(BUILD_EXAMPLES)
     add_executable(gpcpp_example_custom_grid examples/example_custom_grid.cpp)
     target_include_directories(gpcpp_example_custom_grid PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
     target_link_libraries(gpcpp_example_custom_grid PUBLIC gpcpp)
+
+    add_executable(gpcpp_example_labels examples/example_labels.cpp)
+    target_include_directories(gpcpp_example_labels PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
+    target_link_libraries(gpcpp_example_labels PUBLIC gpcpp)
 
 endif()
 

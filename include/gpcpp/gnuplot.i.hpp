@@ -54,20 +54,22 @@ std::string Gnuplot::m_gnuplot_path     = "/usr/local/bin/";
 #define FILE_ACCESS(file, mode) access(file, mode)
 #endif
 
-Gnuplot::Gnuplot()
-    : gnuplot_pipe(nullptr),               // No active pipe initially
+Gnuplot::Gnuplot(bool debug)
+    : debug(debug),                        // Debug is disabled.
+      gnuplot_pipe(nullptr),               // No active pipe initially
       terminal_type(terminal_type_t::wxt), // Default terminal type is wxt
       valid(false),                        // Invalid session by default
       two_dim(true),                       // 2D plotting by default
       nplots(0),                           // No plots initially
       line_width(1.0),                     // Default line width
-      plot_style(plot_style_t::lines),     // Default plot style is lines
-      smooth_style(smooth_style_t::none),  // No smoothing by default
-      line_style(""),                      // No custom line style
+      plot_type(plot_type_t::lines),       // Default plot style is lines
+      smooth_type(smooth_type_t::none),    // No smoothing by default
+      line_type(""),                       // No custom line style
       line_color(),                        // Default line color is unspecified
-      point_style(point_style_t::none),    // Default point style is none
-      point_size(-1.0)                     // Default point size is unspecified
-
+      point_type(point_type_t::none),      // Default point style is none
+      point_size(-1.0),                    // Default point size is unspecified
+      grid_major_style_id(-1),             // Default is disabled.
+      grid_minor_style_id(-1)              // Default is disabled.
 {
 #if (defined(unix) || defined(__unix) || defined(__unix__)) && !defined(__APPLE__)
     // Ensure DISPLAY is set for Unix systems.
@@ -99,13 +101,13 @@ Gnuplot::Gnuplot()
     two_dim = false;
 
     // Initialize styles.
-    plot_style   = plot_style_t::none;
-    smooth_style = smooth_style_t::none;
-    line_style.clear();
+    plot_type   = plot_type_t::none;
+    smooth_type = smooth_type_t::none;
+    line_type.clear();
     line_color.unset();
-    point_style = point_style_t::plus;
-    point_size  = -1.0;
-    line_width  = -1.0;
+    point_type = point_type_t::plus;
+    point_size = -1.0;
+    line_width = -1.0;
 
     // Initialize contour settings.
     contour.type  = contour_type_t::none;
@@ -143,9 +145,12 @@ Gnuplot &Gnuplot::send_cmd(const std::string &cmdstr)
         return *this;
     }
 
+    if (debug) {
+        std::cout << cmdstr.c_str() << "\n";
+    }
+
     // Write the command to the Gnuplot pipe.
     fprintf(gnuplot_pipe, "%s\n", cmdstr.c_str());
-    fflush(gnuplot_pipe);
 
     // Check and update state based on the command type.
     if (cmdstr.find("replot") != std::string::npos) {
@@ -161,6 +166,213 @@ Gnuplot &Gnuplot::send_cmd(const std::string &cmdstr)
         two_dim = true;
         nplots++;
     }
+
+    return *this;
+}
+
+Gnuplot &Gnuplot::plot_vertical_line(double x)
+{
+    // Check if the Gnuplot session is ready.
+    if (!this->is_ready()) {
+        std::cerr << "Error: Invalid Gnuplot session not ready.\n";
+        return *this;
+    }
+
+    std::ostringstream oss;
+
+    // Construct the arrow command for the vertical line
+    oss << "set arrow from " << x << ", graph 0 to " << x << ", graph 1 nohead ";
+
+    // Include line color if it is specified.
+    if (line_color.is_set()) {
+        oss << " lc rgbcolor \"" << line_color.to_string() << "\"";
+    } else {
+        oss << " lc rgbcolor \"black\"";
+    }
+
+    // Add line width if specified.
+    if (line_width > 0) {
+        oss << " lw " << line_width;
+    }
+    // Add line style if specified.
+    if (!line_type.empty()) {
+        oss << " " << line_type;
+    }
+
+    // Send the constructed command to Gnuplot for execution
+    this->send_cmd(oss.str());
+
+    return *this;
+}
+
+Gnuplot &Gnuplot::plot_horizontal_line(double y)
+{
+    // Check if the Gnuplot session is ready.
+    if (!this->is_ready()) {
+        std::cerr << "Error: Invalid Gnuplot session not ready.\n";
+        return *this;
+    }
+
+    std::ostringstream oss;
+
+    // Construct the arrow command for the horizontal line
+    oss << "set arrow from graph 0, first " << y << " to graph 1, first " << y << " nohead ";
+
+    // Include line color if it is specified.
+    if (line_color.is_set()) {
+        oss << " lc rgbcolor \"" << line_color.to_string() << "\"";
+    } else {
+        oss << " lc rgbcolor \"black\"";
+    }
+
+    // Add line width if specified.
+    if (line_width > 0) {
+        oss << " lw " << line_width;
+    }
+    // Add line style if specified.
+    if (!line_type.empty()) {
+        oss << " " << line_type;
+    }
+
+    // Send the constructed command to Gnuplot for execution
+    this->send_cmd(oss.str());
+
+    return *this;
+}
+
+Gnuplot &Gnuplot::plot_vertical_range(double x, double y_min, double y_max)
+{
+    // Check if the Gnuplot session is ready.
+    if (!this->is_ready()) {
+        std::cerr << "Error: Invalid Gnuplot session not ready.\n";
+        return *this;
+    }
+
+    std::ostringstream oss;
+
+    // Construct the command for the vertical line over a range
+    oss << "set arrow from " << x << ", first " << y_min << " to " << x << ", first " << y_max << " nohead ";
+
+    // Include line color if it is specified.
+    if (line_color.is_set()) {
+        oss << " lc rgbcolor \"" << line_color.to_string() << "\"";
+    } else {
+        oss << " lc rgbcolor \"black\"";
+    }
+
+    // Add line style options if specified
+    if (line_width > 0) {
+        oss << " lw " << line_width;
+    }
+    if (!line_type.empty()) {
+        oss << " " << line_type;
+    }
+
+    // Send the constructed command to Gnuplot for execution
+    this->send_cmd(oss.str());
+
+    return *this;
+}
+
+Gnuplot &Gnuplot::plot_horizontal_range(double y, double x_min, double x_max)
+{
+    // Check if the Gnuplot session is ready.
+    if (!this->is_ready()) {
+        std::cerr << "Error: Invalid Gnuplot session not ready.\n";
+        return *this;
+    }
+
+    std::ostringstream oss;
+
+    // Construct the command for the horizontal line over a range
+    oss << "set arrow from " << x_min << ", first " << y << " to " << x_max << ", first " << y << " nohead ";
+
+    // Include line color if it is specified.
+    if (line_color.is_set()) {
+        oss << " lc rgbcolor \"" << line_color.to_string() << "\"";
+    } else {
+        oss << " lc rgbcolor \"black\"";
+    }
+
+    // Add line style options if specified
+    if (line_width > 0) {
+        oss << " lw " << line_width;
+    }
+    if (!line_type.empty()) {
+        oss << " " << line_type;
+    }
+
+    // Send the constructed command to Gnuplot for execution
+    this->send_cmd(oss.str());
+
+    return *this;
+}
+
+Gnuplot &Gnuplot::add_label(double x,
+                            double y,
+                            const std::string &label,
+                            double font_size,
+                            const std::string &color,
+                            double offset_x,
+                            double offset_y,
+                            halign_t alignment,
+                            double rotation,
+                            bool point_type,
+                            const box_style_t &box_style)
+{
+    // Construct the label command string
+    std::ostringstream oss;
+
+    int box_style_id = -1;
+
+    // Optionally add a box style (enclose label in a box).
+    if (box_style.show) {
+        // Generate the box style id.
+        box_style_id = id_manager_textbox_style.generate_unique_id();
+        // Generate the style.
+        this->send_cmd(box_style.get_declaration(box_style_id));
+    }
+
+    oss << "set label \"" << label << "\" at " << x << "," << y;
+
+    // Add horizontal alignment
+    if (alignment == halign_t::left) {
+        oss << " left";
+    } else if (alignment == halign_t::right) {
+        oss << " right";
+    } else {
+        oss << " center"; // default center
+    }
+
+    // Add rotation if specified
+    if (rotation != 0.0) {
+        oss << " rotate by " << rotation;
+    }
+
+    // Add font size
+    oss << " font \", " << font_size << "\"";
+
+    // Add color
+    oss << " textcolor rgb \"" << color << "\"";
+
+    // Optionally add a point style (showing a point at the label)
+    if (point_type) {
+        oss << " point";
+    } else {
+        oss << " nopoint";
+    }
+
+    // Add offset if specified
+    if (offset_x != 0.0 || offset_y != 0.0) {
+        oss << " offset " << offset_x << "," << offset_y;
+    }
+
+    if (box_style.show) {
+        oss << " boxed bs " << box_style_id;
+    }
+
+    // Send the constructed command to Gnuplot.
+    this->send_cmd(oss.str());
 
     return *this;
 }
@@ -220,30 +432,30 @@ Gnuplot &Gnuplot::plot_x(const X &x, const std::string &title)
     // Add a title or specify 'notitle' if no title is provided.
     oss << (title.empty() ? " notitle " : " title \"" + title + "\"");
     // Specify the plot style or smoothing option.
-    if (smooth_style == smooth_style_t::none) {
-        oss << " with " << this->plot_style_to_string(plot_style);
+    if (smooth_type == smooth_type_t::none) {
+        oss << " with " << plot_type_to_string(plot_type);
     } else {
-        oss << " smooth " << this->smooth_style_to_string(smooth_style);
+        oss << " smooth " << smooth_type_to_string(smooth_type);
     }
     // Include line color if it is specified.
     if (line_color.is_set()) {
         oss << " lc rgbcolor \"" << line_color.to_string() << "\"";
     }
     // Add line style options only if the plot style supports lines.
-    if (is_line_style(plot_style)) {
+    if (is_line_type(plot_type)) {
         // Add line width if specified.
         if (line_width > 0) {
             oss << " lw " << line_width;
         }
         // Add line style if specified.
-        if (!line_style.empty()) {
-            oss << " " << line_style;
+        if (!line_type.empty()) {
+            oss << " " << line_type;
         }
     }
     // Add point style and size only if the plot style supports points.
-    if (is_point_style(plot_style)) {
+    if (is_point_type(plot_type)) {
         // Add point style if specified.
-        oss << " pt " << this->point_style_to_string(point_style);
+        oss << " pt " << point_type_to_string(point_type);
         // Add point size if specified.
         if (point_size > 0) {
             oss << " ps " << point_size;
@@ -341,14 +553,14 @@ Gnuplot &Gnuplot::plot_x(const std::vector<X> &datasets, const std::vector<std::
         }
 
         // Specify plot style or smoothing
-        if (smooth_style == smooth_style_t::none) {
-            oss << " with " << this->plot_style_to_string(plot_style);
+        if (smooth_type == smooth_type_t::none) {
+            oss << " with " << plot_type_to_string(plot_type);
         } else {
-            oss << " smooth " << this->smooth_style_to_string(smooth_style);
+            oss << " smooth " << smooth_type_to_string(smooth_type);
         }
 
         // Add line options if applicable
-        if (is_line_style(plot_style)) {
+        if (is_line_type(plot_type)) {
             if (line_width > 0) {
                 oss << " lw " << line_width;
             }
@@ -358,8 +570,8 @@ Gnuplot &Gnuplot::plot_x(const std::vector<X> &datasets, const std::vector<std::
         }
 
         // Add point options if applicable
-        if (is_point_style(plot_style)) {
-            oss << " pt " << this->point_style_to_string(point_style);
+        if (is_point_type(plot_type)) {
+            oss << " pt " << point_type_to_string(point_type);
             if (point_size > 0) {
                 oss << " ps " << point_size;
             }
@@ -434,32 +646,32 @@ Gnuplot &Gnuplot::plot_xy(const X &x, const Y &y, const std::string &title)
     // Specify the file and columns for the Gnuplot command
     oss << " \"" << filename << "\" using 1:2";
     // Add a title or specify 'notitle' if no title is provided
-    oss << (title.empty() ? " notitle " : " title \"" + title + "\"");
+    oss << (title.empty() ? " notitle" : " title \"" + title + "\"");
     // Specify the plot style or smoothing option.
-    if (smooth_style == smooth_style_t::none) {
-        oss << " with " << this->plot_style_to_string(plot_style);
+    if (smooth_type == smooth_type_t::none) {
+        oss << " with " << plot_type_to_string(plot_type);
     } else {
-        oss << " smooth " << this->smooth_style_to_string(smooth_style);
+        oss << " smooth " << smooth_type_to_string(smooth_type);
     }
     // Include line color if it is specified.
     if (line_color.is_set()) {
         oss << " lc rgbcolor \"" << line_color.to_string() << "\"";
     }
     // Add line style options only if the plot style supports lines.
-    if (is_line_style(plot_style)) {
+    if (is_line_type(plot_type)) {
         // Add line width if specified.
         if (line_width > 0) {
             oss << " lw " << line_width;
         }
         // Add line style if specified.
-        if (!line_style.empty()) {
-            oss << " " << line_style;
+        if (!line_type.empty()) {
+            oss << " " << line_type;
         }
     }
     // Add point style and size only if the plot style supports points.
-    if (is_point_style(plot_style)) {
+    if (is_point_type(plot_type)) {
         // Add point style if specified.
-        oss << " pt " << this->point_style_to_string(point_style);
+        oss << " pt " << point_type_to_string(point_type);
         // Add point size if specified.
         if (point_size > 0) {
             oss << " ps " << point_size;
@@ -472,8 +684,7 @@ Gnuplot &Gnuplot::plot_xy(const X &x, const Y &y, const std::string &title)
 }
 
 template <typename X, typename Y, typename E>
-Gnuplot &
-Gnuplot::plot_xy_erorrbar(const X &x, const Y &y, const E &dy, erorrbar_style_t style, const std::string &title)
+Gnuplot &Gnuplot::plot_xy_erorrbar(const X &x, const Y &y, const E &dy, erorrbar_type_t style, const std::string &title)
 {
     // Check if the Gnuplot session is ready
     if (!this->is_ready()) {
@@ -530,7 +741,7 @@ Gnuplot::plot_xy_erorrbar(const X &x, const Y &y, const E &dy, erorrbar_style_t 
     oss << ((nplots > 0 && two_dim) ? "replot " : "plot ");
 
     // Specify the file and columns for the Gnuplot command
-    oss << "\"" << filename << "\" using 1:2:3 with " << this->errorbars_to_string(style) << " ";
+    oss << "\"" << filename << "\" using 1:2:3 with " << errorbars_to_string(style) << " ";
 
     // Add a title or specify 'notitle' if no title is provided
     oss << (title.empty() ? " notitle " : " title \"" + title + "\" ");
@@ -545,12 +756,12 @@ Gnuplot::plot_xy_erorrbar(const X &x, const Y &y, const E &dy, erorrbar_style_t 
         oss << " lw " << line_width;
     }
     // Add line style if specified.
-    if (!line_style.empty()) {
-        oss << " " << line_style;
+    if (!line_type.empty()) {
+        oss << " " << line_type;
     }
 
     // Add point style if specified.
-    oss << " pt " << this->point_style_to_string(point_style);
+    oss << " pt " << point_type_to_string(point_type);
     // Add point size if specified.
     if (point_size > 0) {
         oss << " ps " << point_size;
@@ -626,10 +837,10 @@ Gnuplot &Gnuplot::plot_xyz(const X &x, const Y &y, const Z &z, const std::string
     oss << (title.empty() ? " notitle" : " title \"" + title + "\"");
 
     // Specify the plot style or smoothing option.
-    if (smooth_style == smooth_style_t::none) {
-        oss << " with " << this->plot_style_to_string(plot_style);
+    if (smooth_type == smooth_type_t::none) {
+        oss << " with " << plot_type_to_string(plot_type);
     } else {
-        oss << " smooth " << this->smooth_style_to_string(smooth_style);
+        oss << " smooth " << smooth_type_to_string(smooth_type);
     }
 
     // Include line color if it is specified.
@@ -638,21 +849,21 @@ Gnuplot &Gnuplot::plot_xyz(const X &x, const Y &y, const Z &z, const std::string
     }
 
     // Add line style options only if the plot style supports lines.
-    if (is_line_style(plot_style)) {
+    if (is_line_type(plot_type)) {
         // Add line width if specified.
         if (line_width > 0) {
             oss << " lw " << line_width;
         }
         // Add line style if specified.
-        if (!line_style.empty()) {
-            oss << " " << line_style;
+        if (!line_type.empty()) {
+            oss << " " << line_type;
         }
     }
 
     // Add point style and size only if the plot style supports points.
-    if (is_point_style(plot_style)) {
+    if (is_point_type(plot_type)) {
         // Add point style if specified.
-        oss << " pt " << this->point_style_to_string(point_style);
+        oss << " pt " << point_type_to_string(point_type);
         // Add point size if specified.
         if (point_size > 0) {
             oss << " ps " << point_size;
@@ -731,10 +942,10 @@ Gnuplot &Gnuplot::plot_3d_grid(const X &x, const Y &y, const Z &z, const std::st
     oss << (title.empty() ? " notitle" : " title \"" + title + "\"");
 
     // Specify the plot style or smoothing option.
-    if (smooth_style == smooth_style_t::none) {
-        oss << " with " << this->plot_style_to_string(plot_style);
+    if (smooth_type == smooth_type_t::none) {
+        oss << " with " << plot_type_to_string(plot_type);
     } else {
-        oss << " smooth " << this->smooth_style_to_string(smooth_style);
+        oss << " smooth " << smooth_type_to_string(smooth_type);
     }
 
     // Include line color if it is specified.
@@ -743,21 +954,21 @@ Gnuplot &Gnuplot::plot_3d_grid(const X &x, const Y &y, const Z &z, const std::st
     }
 
     // Add line style options only if the plot style supports lines.
-    if (is_line_style(plot_style)) {
+    if (is_line_type(plot_type)) {
         // Add line width if specified.
         if (line_width > 0) {
             oss << " lw " << line_width;
         }
         // Add line style if specified.
-        if (!line_style.empty()) {
-            oss << " " << line_style;
+        if (!line_type.empty()) {
+            oss << " " << line_type;
         }
     }
 
     // Add point style and size only if the plot style supports points.
-    if (is_point_style(plot_style)) {
+    if (is_point_type(plot_type)) {
         // Add point style if specified.
-        oss << " pt " << this->point_style_to_string(point_style);
+        oss << " pt " << point_type_to_string(point_type);
         // Add point size if specified.
         if (point_size > 0) {
             oss << " ps " << point_size;
@@ -787,10 +998,10 @@ Gnuplot &Gnuplot::plot_slope(const double a, const double b, const std::string &
     }
 
     // Specify the plot style or smoothing option.
-    if (smooth_style == smooth_style_t::none) {
-        oss << " with " << this->plot_style_to_string(plot_style);
+    if (smooth_type == smooth_type_t::none) {
+        oss << " with " << plot_type_to_string(plot_type);
     } else {
-        oss << " smooth " << this->smooth_style_to_string(smooth_style);
+        oss << " smooth " << smooth_type_to_string(smooth_type);
     }
 
     // Include line color if it is specified.
@@ -799,21 +1010,21 @@ Gnuplot &Gnuplot::plot_slope(const double a, const double b, const std::string &
     }
 
     // Add line style options only if the plot style supports lines.
-    if (is_line_style(plot_style)) {
+    if (is_line_type(plot_type)) {
         // Add line width if specified.
         if (line_width > 0) {
             oss << " lw " << line_width;
         }
         // Add line style if specified.
-        if (!line_style.empty()) {
-            oss << " " << line_style;
+        if (!line_type.empty()) {
+            oss << " " << line_type;
         }
     }
 
     // Add point style and size only if the plot style supports points.
-    if (is_point_style(plot_style)) {
+    if (is_point_type(plot_type)) {
         // Add point style if specified.
-        oss << " pt " << this->point_style_to_string(point_style);
+        oss << " pt " << point_type_to_string(point_type);
         // Add point size if specified.
         if (point_size > 0) {
             oss << " ps " << point_size;
@@ -840,10 +1051,10 @@ Gnuplot &Gnuplot::plot_equation(const std::string &equation, const std::string &
     oss << (title.empty() ? " notitle" : " title \"" + title + "\"");
 
     // Specify the plot style or smoothing option.
-    if (smooth_style == smooth_style_t::none) {
-        oss << " with " << this->plot_style_to_string(plot_style);
+    if (smooth_type == smooth_type_t::none) {
+        oss << " with " << plot_type_to_string(plot_type);
     } else {
-        oss << " smooth " << this->smooth_style_to_string(smooth_style);
+        oss << " smooth " << smooth_type_to_string(smooth_type);
     }
 
     // Include line color if it is specified.
@@ -852,21 +1063,21 @@ Gnuplot &Gnuplot::plot_equation(const std::string &equation, const std::string &
     }
 
     // Add line style options only if the plot style supports lines.
-    if (is_line_style(plot_style)) {
+    if (is_line_type(plot_type)) {
         // Add line width if specified.
         if (line_width > 0) {
             oss << " lw " << line_width;
         }
         // Add line style if specified.
-        if (!line_style.empty()) {
-            oss << " " << line_style;
+        if (!line_type.empty()) {
+            oss << " " << line_type;
         }
     }
 
     // Add point style and size only if the plot style supports points.
-    if (is_point_style(plot_style)) {
+    if (is_point_type(plot_type)) {
         // Add point style if specified.
-        oss << " pt " << this->point_style_to_string(point_style);
+        oss << " pt " << point_type_to_string(point_type);
         // Add point size if specified.
         if (point_size > 0) {
             oss << " ps " << point_size;
@@ -896,10 +1107,10 @@ Gnuplot &Gnuplot::plot_equation3d(const std::string &equation, const std::string
     }
 
     // Specify the plot style or smoothing option.
-    if (smooth_style == smooth_style_t::none) {
-        oss << " with " << this->plot_style_to_string(plot_style);
+    if (smooth_type == smooth_type_t::none) {
+        oss << " with " << plot_type_to_string(plot_type);
     } else {
-        oss << " smooth " << this->smooth_style_to_string(smooth_style);
+        oss << " smooth " << smooth_type_to_string(smooth_type);
     }
 
     // Include line color if it is specified.
@@ -908,21 +1119,21 @@ Gnuplot &Gnuplot::plot_equation3d(const std::string &equation, const std::string
     }
 
     // Add line style options only if the plot style supports lines.
-    if (is_line_style(plot_style)) {
+    if (is_line_type(plot_type)) {
         // Add line width if specified.
         if (line_width > 0) {
             oss << " lw " << line_width;
         }
         // Add line style if specified.
-        if (!line_style.empty()) {
-            oss << " " << line_style;
+        if (!line_type.empty()) {
+            oss << " " << line_type;
         }
     }
 
     // Add point style and size only if the plot style supports points.
-    if (is_point_style(plot_style)) {
+    if (is_point_type(plot_type)) {
         // Add point style if specified.
-        oss << " pt " << this->point_style_to_string(point_style);
+        oss << " pt " << point_type_to_string(point_type);
         // Add point size if specified.
         if (point_size > 0) {
             oss << " ps " << point_size;
@@ -1070,26 +1281,30 @@ Gnuplot &Gnuplot::reset_all()
     nplots = 0;
     this->send_cmd("reset");
     this->send_cmd("clear");
-    plot_style   = plot_style_t::none;
-    smooth_style = smooth_style_t::none;
+    plot_type   = plot_type_t::none;
+    smooth_type = smooth_type_t::none;
+    id_manager_textbox_style.clear();
+    id_manager_line_style.clear();
+    grid_major_style_id = -1;
+    grid_minor_style_id = -1;
     return *this;
 }
 
-Gnuplot &Gnuplot::set_plot_style(plot_style_t style)
+Gnuplot &Gnuplot::set_plot_type(plot_type_t style)
 {
-    plot_style = style;
+    plot_type = style;
     return *this;
 }
 
-Gnuplot &Gnuplot::set_smooth_style(smooth_style_t style)
+Gnuplot &Gnuplot::set_smooth_type(smooth_type_t style)
 {
-    smooth_style = style;
+    smooth_type = style;
     return *this;
 }
 
-Gnuplot &Gnuplot::set_line_style(line_style_t style, const std::string &custom_pattern)
+Gnuplot &Gnuplot::set_line_type(line_type_t style, const std::string &custom_pattern)
 {
-    line_style = this->line_style_to_string(style, custom_pattern);
+    line_type = line_type_to_string(style, custom_pattern);
     return *this;
 }
 
@@ -1105,9 +1320,9 @@ Gnuplot &Gnuplot::set_line_color(int r, int g, int b)
     return *this;
 }
 
-Gnuplot &Gnuplot::set_point_style(point_style_t style)
+Gnuplot &Gnuplot::set_point_type(point_type_t style)
 {
-    point_style = style;
+    point_type = style;
     return *this;
 }
 
@@ -1122,7 +1337,9 @@ Gnuplot &Gnuplot::set_point_size(double size)
 Gnuplot &Gnuplot::show()
 {
     this->send_cmd("set output");
-    this->send_cmd("set terminal " + this->terminal_type_to_string(terminal_type));
+    this->send_cmd("set terminal " + terminal_type_to_string(terminal_type));
+
+    fflush(gnuplot_pipe);
 
     // Wait for user input before closing.
     std::cout << "Press Enter to continue..." << std::endl;
@@ -1135,7 +1352,7 @@ Gnuplot &Gnuplot::set_output(const std::string filename)
 {
     // Set the output file where the plot will be saved
     this->send_cmd("set output \"" + filename + "\"");
-    this->send_cmd("set terminal " + this->terminal_type_to_string(terminal_type));
+    this->send_cmd("set terminal " + terminal_type_to_string(terminal_type));
     return *this;
 }
 
@@ -1309,14 +1526,18 @@ Gnuplot &Gnuplot::set_ytics_minor(int minor_intervals)
     return *this;
 }
 
-Gnuplot &Gnuplot::set_grid_line_style(grid_type_t grid_type,
-                                      line_style_t style,
-                                      const Color &color,
-                                      double width,
-                                      const std::string &custom_dash)
+Gnuplot &Gnuplot::set_grid_line_type(grid_type_t grid_type,
+                                     line_type_t style,
+                                     const Color &color,
+                                     double width,
+                                     const std::string &custom_dash)
 {
-    // Define the style line index based on grid type
-    int line_index = (grid_type == grid_type_t::major) ? 1 : (grid_type == grid_type_t::minor) ? 2 : 3;
+    if ((grid_type == grid_type_t::major) && (grid_major_style_id < 0)) {
+        grid_major_style_id = id_manager_line_style.generate_unique_id();
+    }
+    if ((grid_type == grid_type_t::minor) && (grid_minor_style_id < 0)) {
+        grid_minor_style_id = id_manager_line_style.generate_unique_id();
+    }
 
     // Define default linetype (solid)
     int linetype = 1;
@@ -1324,22 +1545,22 @@ Gnuplot &Gnuplot::set_grid_line_style(grid_type_t grid_type,
     // Define custom dashtype based on the line style
     std::string dashtype;
     switch (style) {
-    case line_style_t::solid:
+    case line_type_t::solid:
         linetype = 1;
         break;
-    case line_style_t::dashed:
+    case line_type_t::dashed:
         dashtype = "50, 25";
         break;
-    case line_style_t::dotted:
+    case line_type_t::dotted:
         dashtype = "1, 1";
         break;
-    case line_style_t::dash_dot:
+    case line_type_t::dash_dot:
         dashtype = "10, 5, 1, 5";
         break;
-    case line_style_t::dash_dot_dot:
+    case line_type_t::dash_dot_dot:
         dashtype = "10, 5, 1, 5, 1, 5";
         break;
-    case line_style_t::custom:
+    case line_type_t::custom:
         if (!custom_dash.empty()) {
             dashtype = custom_dash; // Use the provided custom dash pattern
         }
@@ -1349,7 +1570,12 @@ Gnuplot &Gnuplot::set_grid_line_style(grid_type_t grid_type,
     }
 
     // Build the Gnuplot command
-    std::string cmd = "set style line " + std::to_string(line_index); // Line style index
+    std::string cmd = "set style line ";
+    if (grid_type == grid_type_t::major) {
+        cmd += std::to_string(grid_major_style_id);
+    } else if (grid_type == grid_type_t::minor) {
+        cmd += std::to_string(grid_minor_style_id);
+    }
     cmd += " lt " + std::to_string(linetype);
     if (!dashtype.empty()) {
         cmd += " dt (" + dashtype + ")";
@@ -1365,25 +1591,24 @@ Gnuplot &Gnuplot::set_grid_line_style(grid_type_t grid_type,
     return *this;
 }
 
-Gnuplot &Gnuplot::apply_grid(const std::string &tics, int angle, const std::string &layer)
+Gnuplot &Gnuplot::apply_grid(const std::string &tics, const std::string &layer, bool vertical_lines)
 {
     std::string cmd = "set grid " + tics;
-
     if (layer == "front" || layer == "back") {
-        cmd += " " + grid.grid_layer;
+        cmd += " " + layer;
     }
-
-    // Apply major grid style
-    cmd += " ls 1"; // Use line style 1 for major grid
-
-    // Apply minor grid style
-    cmd += ", ls 2"; // Use line style 2 for minor grid
-
-    // Add polar grid if applicable
-    if (angle >= 0) {
-        cmd += " polar " + std::to_string(angle);
+    // Apply major grid style.
+    if (grid_major_style_id > 0) {
+        cmd += " ls " + std::to_string(grid_major_style_id);
     }
-
+    // Apply minor grid style.
+    if (grid_minor_style_id > 0) {
+        cmd += " , ls " + std::to_string(grid_minor_style_id);
+    }
+    // Vertical lines option.
+    if (!vertical_lines) {
+        cmd += " novertical";
+    }
     this->send_cmd(cmd);
     return *this;
 }
@@ -1647,18 +1872,6 @@ bool Gnuplot::file_exists(const std::string &filename, int mode)
     return false;
 }
 
-bool Gnuplot::is_line_style(plot_style_t style)
-{
-    return (style == plot_style_t::lines || style == plot_style_t::lines_points || style == plot_style_t::steps ||
-            style == plot_style_t::fsteps || style == plot_style_t::histeps || style == plot_style_t::filled_curves ||
-            style == plot_style_t::impulses);
-}
-
-bool Gnuplot::is_point_style(plot_style_t style)
-{
-    return (style == plot_style_t::points || style == plot_style_t::lines_points);
-}
-
 bool Gnuplot::file_ready(const std::string &filename)
 {
     // Check if the file exists.
@@ -1758,207 +1971,6 @@ Gnuplot &Gnuplot::apply_contour_settings()
     return *this;
 }
 
-std::string Gnuplot::plot_style_to_string(plot_style_t style)
-{
-    switch (style) {
-    case plot_style_t::lines:
-        return "lines";
-    case plot_style_t::points:
-        return "points";
-    case plot_style_t::lines_points:
-        return "linespoints";
-    case plot_style_t::impulses:
-        return "impulses";
-    case plot_style_t::dots:
-        return "dots";
-    case plot_style_t::steps:
-        return "steps";
-    case plot_style_t::fsteps:
-        return "fsteps";
-    case plot_style_t::histeps:
-        return "histeps";
-    case plot_style_t::boxes:
-        return "boxes";
-    case plot_style_t::filled_curves:
-        return "filledcurves";
-    case plot_style_t::histograms:
-        return "histograms";
-    default:
-        return "lines";
-    }
-}
-
-std::string Gnuplot::smooth_style_to_string(smooth_style_t style)
-{
-    switch (style) {
-    case smooth_style_t::unique:
-        return "unique";
-    case smooth_style_t::frequency:
-        return "frequency";
-    case smooth_style_t::csplines:
-        return "csplines";
-    case smooth_style_t::acsplines:
-        return "acsplines";
-    case smooth_style_t::bezier:
-        return "bezier";
-    case smooth_style_t::sbezier:
-        return "sbezier";
-    default:
-        return std::string(); // Default: No smoothing
-    }
-}
-
-std::string Gnuplot::line_style_to_string(line_style_t style, const std::string &custom_pattern)
-{
-    switch (style) {
-    case line_style_t::solid:
-        return "dashtype 1"; // Solid
-    case line_style_t::dashed:
-        return "dashtype 2"; // Dashed
-    case line_style_t::dotted:
-        return "dashtype 3"; // Dotted
-    case line_style_t::dash_dot:
-        return "dashtype 4"; // Dash-dot
-    case line_style_t::dash_dot_dot:
-        return "dashtype 5"; // Dash-dot-dot
-    case line_style_t::custom:
-        return "dashtype (" + custom_pattern + ")";
-    default:
-        return "dashtype 1"; // Fallback to solid
-    }
-}
-
-std::string Gnuplot::point_style_to_string(point_style_t style)
-{
-    return std::to_string(static_cast<int>(style));
-}
-
-std::string Gnuplot::errorbars_to_string(erorrbar_style_t style)
-{
-    switch (style) {
-    case erorrbar_style_t::yerrorbars:
-        return "yerrorbars";
-    case erorrbar_style_t::xerrorbars:
-        return "xerrorbars";
-    default:
-        return "yerrorbars";
-    }
-}
-
-std::string Gnuplot::terminal_type_to_string(terminal_type_t type)
-{
-    switch (type) {
-    case terminal_type_t::cairolatex:
-        return "cairolatex";
-    case terminal_type_t::canvas:
-        return "canvas";
-    case terminal_type_t::cgm:
-        return "cgm";
-    case terminal_type_t::context:
-        return "context";
-    case terminal_type_t::domterm:
-        return "domterm";
-    case terminal_type_t::dpu414:
-        return "dpu414";
-    case terminal_type_t::dumb:
-        return "dumb";
-    case terminal_type_t::dxf:
-        return "dxf";
-    case terminal_type_t::emf:
-        return "emf";
-    case terminal_type_t::epscairo:
-        return "epscairo";
-    case terminal_type_t::epslatex:
-        return "epslatex";
-    case terminal_type_t::epson_180dpi:
-        return "epson_180dpi";
-    case terminal_type_t::epson_60dpi:
-        return "epson_60dpi";
-    case terminal_type_t::epson_lx800:
-        return "epson_lx800";
-    case terminal_type_t::fig:
-        return "fig";
-    case terminal_type_t::gif:
-        return "gif";
-    case terminal_type_t::hp500c:
-        return "hp500c";
-    case terminal_type_t::hpdj:
-        return "hpdj";
-    case terminal_type_t::hpgl:
-        return "hpgl";
-    case terminal_type_t::hpljii:
-        return "hpljii";
-    case terminal_type_t::hppj:
-        return "hppj";
-    case terminal_type_t::jpeg:
-        return "jpeg";
-    case terminal_type_t::lua:
-        return "lua";
-    case terminal_type_t::mf:
-        return "mf";
-    case terminal_type_t::mp:
-        return "mp";
-    case terminal_type_t::nec_cp6:
-        return "nec_cp6";
-    case terminal_type_t::okidata:
-        return "okidata";
-    case terminal_type_t::pbm:
-        return "pbm";
-    case terminal_type_t::pcl5:
-        return "pcl5";
-    case terminal_type_t::pdfcairo:
-        return "pdfcairo";
-    case terminal_type_t::pict2e:
-        return "pict2e";
-    case terminal_type_t::png:
-        return "png";
-    case terminal_type_t::pngcairo:
-        return "pngcairo";
-    case terminal_type_t::postscript:
-        return "postscript";
-    case terminal_type_t::pslatex:
-        return "pslatex";
-    case terminal_type_t::pstex:
-        return "pstex";
-    case terminal_type_t::pstricks:
-        return "pstricks";
-    case terminal_type_t::sixelgd:
-        return "sixelgd";
-    case terminal_type_t::sixeltek:
-        return "sixeltek";
-    case terminal_type_t::starc:
-        return "starc";
-    case terminal_type_t::svg:
-        return "svg";
-    case terminal_type_t::tandy_60dpi:
-        return "tandy_60dpi";
-    case terminal_type_t::tek40xx:
-        return "tek40xx";
-    case terminal_type_t::tek410x:
-        return "tek410x";
-    case terminal_type_t::texdraw:
-        return "texdraw";
-    case terminal_type_t::tikz:
-        return "tikz";
-    case terminal_type_t::tkcanvas:
-        return "tkcanvas";
-    case terminal_type_t::unknown:
-        return "unknown";
-    case terminal_type_t::vttek:
-        return "vttek";
-    case terminal_type_t::wxt:
-        return "wxt";
-    case terminal_type_t::x11:
-        return "x11";
-    case terminal_type_t::xlib:
-        return "xlib";
-    case terminal_type_t::xterm:
-        return "xterm";
-    default:
-        return "wxt";
-    }
-}
-
 void Gnuplot::remove_tmpfiles()
 {
     if (tmpfile_list.empty()) {
@@ -1973,6 +1985,18 @@ void Gnuplot::remove_tmpfiles()
     Gnuplot::m_tmpfile_num -= static_cast<int>(tmpfile_list.size());
     // Clear the list of temporary files
     tmpfile_list.clear();
+}
+
+bool is_line_type(plot_type_t style)
+{
+    return (style == plot_type_t::lines || style == plot_type_t::lines_points || style == plot_type_t::steps ||
+            style == plot_type_t::fsteps || style == plot_type_t::histeps || style == plot_type_t::filled_curves ||
+            style == plot_type_t::impulses);
+}
+
+bool is_point_type(plot_type_t style)
+{
+    return (style == plot_type_t::points || style == plot_type_t::lines_points);
 }
 
 } // namespace gpcpp

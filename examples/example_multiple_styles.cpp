@@ -12,7 +12,7 @@ int main()
     using namespace gpcpp;
 
     // Create a Gnuplot instance
-    Gnuplot gnuplot;
+    Gnuplot gnuplot(true);
 
     // Prepare data for plotting
     std::vector<double> x, y, z, w;
@@ -28,19 +28,19 @@ int main()
         .set_title("Multiple Lines: y = x^2, z = 1.5 * x^2, w = 2 * x^2")
 
         // Plot y = x^2 as a line
-        .set_plot_style(plot_style_t::boxes)
+        .set_plot_type(plot_type_t::boxes)
         .set_line_color("#ff5733")
         .plot_xy(x, y, "y = x^2")
 
         // Plot z = 1.5 * x^2 as a line
-        .set_plot_style(plot_style_t::lines)
-        .set_line_style(line_style_t::dashed)
+        .set_plot_type(plot_type_t::lines)
+        .set_line_type(line_type_t::dashed)
         .set_line_color("red")
         .set_line_width(2.0)
         .plot_xy(x, z, "z = 1.5 * x^2")
 
         // Plot w = 2 * x^2 as a line
-        .set_plot_style(plot_style_t::lines)
+        .set_plot_type(plot_type_t::lines)
         .set_line_color("#228B22")
         .set_line_width(2.0)
         .plot_xy(x, w, "w = 2 * x^2")

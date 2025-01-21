@@ -13,7 +13,7 @@ int main()
     using namespace gpcpp;
 
     // Create a Gnuplot instance
-    Gnuplot gnuplot;
+    Gnuplot gnuplot(true);
 
     // Prepare data for plotting
     std::vector<double> x, y, dy;
@@ -28,15 +28,15 @@ int main()
         .set_title("Line Plot with Error Bars") // Set plot title
         .set_grid()                             // Show the grid.
         // Plot the line.
-        .set_plot_style(plot_style_t::lines) // Set the plot style to line.
-        .set_line_style(line_style_t::solid) // Set the line stype.
+        .set_plot_type(plot_type_t::lines) // Set the plot type to line.
+        .set_line_type(line_type_t::solid) // Set the line type.
         .set_line_color("red")               // Set line color to blue
         .set_line_width(2.0)                 // Set line width
         .plot_xy(x, y, "Data")               // Plot with lines
         // Then, plot the erro bar.
         .set_line_color("blue")                                   // Set line color to blue
         .set_line_width(2.0)                                      // Set line width
-        .plot_xy_erorrbar(x, y, dy, erorrbar_style_t::yerrorbars) // Plot with error bars along y-axis
+        .plot_xy_erorrbar(x, y, dy, erorrbar_type_t::yerrorbars) // Plot with error bars along y-axis
         .show();
 
     return 0;

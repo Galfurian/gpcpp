@@ -14,7 +14,7 @@ int main()
     using namespace gpcpp;
 
     // Create a Gnuplot instance
-    Gnuplot gnuplot;
+    Gnuplot gnuplot(true);
 
     // Prepare data for plotting
     std::vector<double> x, y;
@@ -25,12 +25,12 @@ int main()
 
     // Plot the data as scatter points with custom styles
     gnuplot
-        .set_grid()                                    // Show the grid.
-        .set_plot_style(plot_style_t::points)          // Set the plot style to points.
-        .set_point_style(point_style_t::open_triangle) // Set filled circle for points
-        .set_point_size(1.5)                           // Set point size
-        .set_line_width(0)                             // No line connecting points
-        .plot_xy(x, y)                                 // Plot the x, y pairs
+        .set_grid()                                  // Show the grid.
+        .set_plot_type(plot_type_t::points)          // Set the plot type to points.
+        .set_point_type(point_type_t::open_triangle) // Set filled circle for points
+        .set_point_size(1.5)                         // Set point size
+        .set_line_width(0)                           // No line connecting points
+        .plot_xy(x, y)                               // Plot the x, y pairs
         .show();
 
     return 0;
