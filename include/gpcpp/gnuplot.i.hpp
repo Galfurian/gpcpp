@@ -16,7 +16,7 @@ namespace gpcpp
 template <typename T>
 inline bool are_equal(T a, T b, T tolerance = 1e-6)
 {
-    static_assert(std::is_floating_point_v<T>, "exceeds_tolerance requires floating-point types.");
+    static_assert(std::is_floating_point<T>::value, "exceeds_tolerance requires floating-point types.");
     return std::abs(a - b) > tolerance;
 }
 
