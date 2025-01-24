@@ -20,14 +20,14 @@ struct Color {
     }
 
     /// @brief Constructor: initializes the color with valid RGB values.
-    /// @param r The red component of the color (0-255).
-    /// @param g The green component of the color (0-255).
-    /// @param b The blue component of the color (0-255).
-    /// @param a The alpha component (0 = transparent, 255 = opaque).
+    /// @param _r The red component of the color (0-255).
+    /// @param _g The green component of the color (0-255).
+    /// @param _b The blue component of the color (0-255).
+    /// @param _a The alpha component (0 = transparent, 255 = opaque).
     /// @details This constructor sets the RGB values to the provided parameters, ensuring they are valid (0-255).
-    Color(int r, int g, int b, int a = 255) : r(-1), g(-1), b(-1), a(255)
+    Color(int _r, int _g, int _b, int _a = 255) : r(-1), g(-1), b(-1), a(255)
     {
-        set_from_rgba(r, g, b, a);
+        set_from_rgba(_r, _g, _b, _a);
     }
 
     /// @brief Constructor from a string (hex format \#RRGGBB or color name).
@@ -61,18 +61,18 @@ struct Color {
     }
 
     /// @brief Sets the color components using RGB values.
-    /// @param r The red component of the color (0-255).
-    /// @param g The green component of the color (0-255).
-    /// @param b The blue component of the color (0-255).
-    /// @param a The alpha component (0-255, default: 255).
+    /// @param _r The red component of the color (0-255).
+    /// @param _g The green component of the color (0-255).
+    /// @param _b The blue component of the color (0-255).
+    /// @param _a The alpha component (0-255, default: 255).
     /// @details This function ensures that each RGB component is within the valid range (0-255).
     /// If any component is out of range, it is clamped to the nearest valid value.
-    void set_from_rgba(int r, int g, int b, int a = 255)
+    void set_from_rgba(int _r, int _g, int _b, int _a = 255)
     {
-        this->r = (r >= 0 && r <= 255) ? r : 0;
-        this->g = (g >= 0 && g <= 255) ? g : 0;
-        this->b = (b >= 0 && b <= 255) ? b : 0;
-        this->a = (a >= 0 && a <= 255) ? a : 0;
+        r = (_r >= 0 && _r <= 255) ? _r : 0;
+        g = (_g >= 0 && _g <= 255) ? _g : 0;
+        b = (_b >= 0 && _b <= 255) ? _b : 0;
+        a = (_a >= 0 && _a <= 255) ? _a : 0;
     }
 
     /// @brief Sets the color from a hex code string.

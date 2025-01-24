@@ -60,29 +60,54 @@ target_compile_features(gpcpp INTERFACE cxx_std_11)
 # -----------------------------------------------------------------------------
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    # Disable warnings that suggest using MSVC-specific safe functions
+    # Disable warnings for MSVC-specific "safe" functions like strcpy_s, etc.,
+    # which are not portable and may clutter warning logs.
     target_compile_definitions(gpcpp INTERFACE _CRT_SECURE_NO_WARNINGS)
+
+    # Disable warning C4702: unreachable code.
+    add_compile_options(/wd4702)
+
     if(WARNINGS_AS_ERRORS)
+        # Treat all warnings as errors to enforce stricter code quality.
         target_compile_options(gpcpp INTERFACE /WX)
     endif()
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    if(WARNINGS_AS_ERRORS)
-        target_compile_options(gpcpp INTERFACE -Werror)
-    endif()
-endif()
 
-if(STRICT_WARNINGS)
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-        # Mark system headers as external for MSVC explicitly
-        # https://devblogs.microsoft.com/cppblog/broken-warnings-theory
+    if(STRICT_WARNINGS)
+        # Enable external header management to suppress warnings in system and
+        # external headers, making it easier to focus on project-specific issues.
         target_compile_options(gpcpp INTERFACE /experimental:external)
         target_compile_options(gpcpp INTERFACE /external:I ${CMAKE_BINARY_DIR})
         target_compile_options(gpcpp INTERFACE /external:anglebrackets)
         target_compile_options(gpcpp INTERFACE /external:W0)
 
+        # Use a high warning level to catch as many potential issues as possible.
         target_compile_options(gpcpp INTERFACE /W4)
-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        target_compile_options(gpcpp INTERFACE -Wall -Wextra -Wconversion -pedantic)
+
+        # Enforce standards-compliant behavior to avoid relying on MSVC-specific extensions.
+        target_compile_options(gpcpp INTERFACE /permissive-)
+    endif()
+
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    if(WARNINGS_AS_ERRORS)
+        # Treat all warnings as errors to enforce stricter code quality.
+        target_compile_options(gpcpp INTERFACE -Werror)
+    endif()
+
+    if(STRICT_WARNINGS)
+        # Enable a broad set of warnings to catch common and subtle issues:
+        target_compile_options(gpcpp INTERFACE
+            -Wall                # Enable most general-purpose warnings.
+            -Wextra              # Enable extra warnings not included in -Wall.
+            -Wconversion         # Warn about implicit type conversions that may lose data.
+            -pedantic            # Enforce strict compliance with the C++ standard.
+            -Wshadow             # Warn about variable shadowing, which can cause subtle bugs.
+            -Wnon-virtual-dtor   # Warn when a class with virtual functions lacks a virtual destructor.
+            -Wnull-dereference   # Warn about potential null pointer dereferences.
+            -Wformat=2           # Enable strict checks for printf/scanf format strings.
+            -Woverloaded-virtual # Warn when a derived class function hides a base class virtual function.
+            -Wfloat-equal        # Warn about direct comparisons of floating-point values, which can be imprecise.
+        )
+
     endif()
 endif()
 
@@ -147,26 +172,42 @@ endif()
 # -----------------------------------------------------------------------------
 
 if(DOXYGEN_FOUND)
-    
-    # Record the options that describe how to populate the specified content.
+        
+    # FetchContent: Doxygen Awesome CSS
     FetchContent_Declare(doxygenawesome
         GIT_REPOSITORY https://github.com/jothepro/doxygen-awesome-css
         GIT_TAG main
     )
-    # Retrieve the properties related to the content.
     FetchContent_MakeAvailable(doxygenawesome)
-    # Hide fetchcontent variables, otherwise with ccmake it's a mess.
+
+    # Hide FetchContent variables to avoid clutter in ccmake.
     mark_as_advanced(FORCE
         FETCHCONTENT_UPDATES_DISCONNECTED_DOXYGENAWESOME
         FETCHCONTENT_SOURCE_DIR_DOXYGENAWESOME
     )
 
-    # = CUSTOMIZATION =========================================================
+    # Read the file with the version.
+    file(READ ${PROJECT_SOURCE_DIR}/include/gpcpp/gnuplot.hpp version_file)
+    # Extract the version.
+    string(REGEX MATCH "GPCPP_MAJOR_VERSION ([0-9]*)" _ ${version_file})
+    set(GPCPP_MAJOR_VERSION ${CMAKE_MATCH_1})
+    string(REGEX MATCH "GPCPP_MINOR_VERSION ([0-9]*)" _ ${version_file})
+    set(GPCPP_MINOR_VERSION ${CMAKE_MATCH_1})
+    string(REGEX MATCH "GPCPP_MICRO_VERSION ([0-9]*)" _ ${version_file})
+    set(GPCPP_MICRO_VERSION ${CMAKE_MATCH_1})
+
+    # Customization: Doxygen Configuration
     set(DOXYGEN_WARN_FORMAT "$file:$line: $text")
-    set(DOXYGEN_PROJECT_NAME gpcpp)
+    set(DOXYGEN_PROJECT_NAME GPCPP)
+    set(DOXYGEN_PROJECT_BRIEF "Simple wrapper for gnuplot for C++")
+    set(DOXYGEN_PROJECT_NUMBER "${GPCPP_MAJOR_VERSION}.${GPCPP_MINOR_VERSION}.${GPCPP_MICRO_VERSION}")
     set(DOXYGEN_USE_MDFILE_AS_MAINPAGE ${PROJECT_SOURCE_DIR}/README.md)
     set(DOXYGEN_SHOW_INCLUDE_FILES NO)
     set(DOXYGEN_GENERATE_TREEVIEW YES)
+    set(DOXYGEN_GENERATE_LATEX NO)
+    set(DOXYGEN_GENERATE_MAN NO)
+
+    # Styling and UX enhancements using Doxygen Awesome
     set(DOXYGEN_HTML_HEADER ${doxygenawesome_SOURCE_DIR}/doxygen-custom/header.html)
     set(DOXYGEN_HTML_EXTRA_STYLESHEET ${doxygenawesome_SOURCE_DIR}/doxygen-awesome.css)
     set(DOXYGEN_HTML_EXTRA_FILES
@@ -174,12 +215,31 @@ if(DOXYGEN_FOUND)
         ${doxygenawesome_SOURCE_DIR}/doxygen-awesome-paragraph-link.js
         ${doxygenawesome_SOURCE_DIR}/doxygen-awesome-darkmode-toggle.js
     )
+
+    # Set stricter warnings for better documentation quality
+    set(DOXYGEN_WARN_IF_UNDOCUMENTED YES)
+    set(DOXYGEN_WARN_IF_DOC_ERROR YES)
+    set(DOXYGEN_WARN_NO_PARAMDOC YES)
+    set(DOXYGEN_WARN_AS_ERROR YES)
+
+    # Exclude certain files or directories from documentation (if needed)
+    set(DOXYGEN_EXCLUDE_PATTERNS
+        "${PROJECT_SOURCE_DIR}/tests/*"
+        "${PROJECT_SOURCE_DIR}/examples/*"
+    )
+
+    # Add Doxygen documentation target
     doxygen_add_docs(
         gpcpp_documentation
         ${PROJECT_SOURCE_DIR}/README.md
         ${PROJECT_SOURCE_DIR}/LICENSE.md
+        ${PROJECT_SOURCE_DIR}/include/gpcpp/box_style.hpp
         ${PROJECT_SOURCE_DIR}/include/gpcpp/color.hpp
+        ${PROJECT_SOURCE_DIR}/include/gpcpp/defines.hpp
         ${PROJECT_SOURCE_DIR}/include/gpcpp/gnuplot.hpp
         ${PROJECT_SOURCE_DIR}/include/gpcpp/gnuplot.i.hpp
+        ${PROJECT_SOURCE_DIR}/include/gpcpp/id_manager.hpp
+        COMMENT "Generating Doxygen documentation for the library"
     )
+
 endif()

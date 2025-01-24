@@ -6,6 +6,18 @@
 namespace gpcpp
 {
 
+/// @brief Checks if the difference between two floating-point values exceeds a tolerance.
+/// @param a The first value.
+/// @param b The second value.
+/// @param tolerance The allowable difference (default is 1e-6).
+/// @returns True if the difference exceeds the tolerance, false otherwise.
+template <typename T>
+inline bool are_equal(T a, T b, T tolerance = 1e-6)
+{
+    static_assert(std::is_floating_point_v<T>, "exceeds_tolerance requires floating-point types.");
+    return std::abs(a - b) > tolerance;
+}
+
 /// @brief Maximum number of temporary files allowed.
 /// @details This value is platform-dependent:
 /// - Windows: 27 files (due to OS restrictions).
@@ -54,8 +66,8 @@ std::string Gnuplot::m_gnuplot_path     = "/usr/local/bin/";
 #define FILE_ACCESS(file, mode) access(file, mode)
 #endif
 
-Gnuplot::Gnuplot(bool debug)
-    : debug(debug),                        // Debug is disabled.
+Gnuplot::Gnuplot(bool _debug)
+    : debug(_debug),                       // Debug is disabled.
       gnuplot_pipe(nullptr),               // No active pipe initially
       terminal_type(terminal_type_t::wxt), // Default terminal type is wxt
       valid(false),                        // Invalid session by default
@@ -317,7 +329,7 @@ Gnuplot &Gnuplot::add_label(double x,
                             double offset_y,
                             halign_t alignment,
                             double rotation,
-                            bool point_type,
+                            bool _point_type,
                             const box_style_t &box_style)
 {
     // Construct the label command string
@@ -344,8 +356,8 @@ Gnuplot &Gnuplot::add_label(double x,
         oss << " center"; // default center
     }
 
-    // Add rotation if specified
-    if (rotation != 0.0) {
+    // Add rotation if specified.
+    if (!gpcpp::are_equal(rotation, 0.0)) {
         oss << " rotate by " << rotation;
     }
 
@@ -356,14 +368,14 @@ Gnuplot &Gnuplot::add_label(double x,
     oss << " textcolor rgb \"" << color << "\"";
 
     // Optionally add a point style (showing a point at the label)
-    if (point_type) {
+    if (_point_type) {
         oss << " point";
     } else {
         oss << " nopoint";
     }
 
     // Add offset if specified
-    if (offset_x != 0.0 || offset_y != 0.0) {
+    if (!gpcpp::are_equal(offset_x, 0.0) || !gpcpp::are_equal(offset_y, 0.0)) {
         oss << " offset " << offset_x << "," << offset_y;
     }
 

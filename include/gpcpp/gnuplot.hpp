@@ -17,6 +17,10 @@
 #include <cstdlib> // for getenv()
 #include <list>    // for std::list
 
+#define GPCPP_MAJOR_VERSION 1 ///< Major version of the library.
+#define GPCPP_MINOR_VERSION 0 ///< Minor version of the library.
+#define GPCPP_MICRO_VERSION 0 ///< Micro version of the library.
+
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__TOS_WIN__)
 //defined for 32 and 64-bit environments
 #include <io.h> // for _access(), _mktemp()
@@ -41,7 +45,8 @@ namespace gpcpp
 class Gnuplot {
 public:
     /// @brief Constructs a Gnuplot session.
-    Gnuplot(bool debug = false);
+    /// @param _debug enable debug mode (default is false).
+    Gnuplot(bool _debug = false);
 
     /// @brief Destructor to clean up and delete temporary files.
     ~Gnuplot();
