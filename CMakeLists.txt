@@ -197,7 +197,7 @@ if(DOXYGEN_FOUND)
     set(GPCPP_MICRO_VERSION ${CMAKE_MATCH_1})
 
     # Customization: Doxygen Configuration
-    set(DOXYGEN_WARN_FORMAT "$file:$line: $text")
+    set(DOXYGEN_WARN_FORMAT "$file:$line:1: $text")
     set(DOXYGEN_PROJECT_NAME GPCPP)
     set(DOXYGEN_PROJECT_BRIEF "Simple wrapper for gnuplot for C++")
     set(DOXYGEN_PROJECT_NUMBER "${GPCPP_MAJOR_VERSION}.${GPCPP_MINOR_VERSION}.${GPCPP_MICRO_VERSION}")
