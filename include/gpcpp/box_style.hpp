@@ -52,7 +52,7 @@ struct box_style_t {
     /// @brief Convert the box style to a string for use in Gnuplot.
     /// @param id The id of the box.
     /// @return the string representation of the box style.
-    std::string get_declaration(int id) const
+    auto get_declaration(int id) const -> std::string
     {
         std::ostringstream oss;
         if (show) {
