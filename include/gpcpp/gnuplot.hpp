@@ -663,9 +663,9 @@ private:
     id_manager_t id_manager_textbox_style;
 
     /// @brief number of all tmpfiles (number of tmpfiles restricted)
-    static unsigned m_tmpfile_num;
+    static std::size_t m_tmpfile_num;
     /// @brief Maximum number of opened files.
-    static const unsigned m_tmpfile_max;
+    static const std::size_t m_tmpfile_max;
     /// @brief name of executed GNUPlot file
     static std::string m_gnuplot_filename;
     /// @brief gnuplot path

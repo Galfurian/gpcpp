@@ -45,16 +45,16 @@ inline auto are_equal(T a, T b, T tolerance = 1e-6) -> bool
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__TOS_WIN__)
 // Windows-specific static variable initializations
-std::string Gnuplot::m_gnuplot_filename = "pgnuplot.exe";
-std::string Gnuplot::m_gnuplot_path     = "C:/program files/gnuplot/bin/";
-unsigned Gnuplot::m_tmpfile_num         = 0;
-unsigned const Gnuplot::m_tmpfile_max   = 27;
+std::string Gnuplot::m_gnuplot_filename  = "pgnuplot.exe";
+std::string Gnuplot::m_gnuplot_path      = "C:/program files/gnuplot/bin/";
+std::size_t Gnuplot::m_tmpfile_num       = 0;
+const std::size_t Gnuplot::m_tmpfile_max = 27;
 #elif defined(unix) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
 // UNIX-like system static variable initializations
-std::string Gnuplot::m_gnuplot_filename = "gnuplot";
-std::string Gnuplot::m_gnuplot_path     = "/usr/local/bin/";
-unsigned Gnuplot::m_tmpfile_num         = 0;
-unsigned const Gnuplot::m_tmpfile_max   = 64;
+std::string Gnuplot::m_gnuplot_filename  = "gnuplot";
+std::string Gnuplot::m_gnuplot_path      = "/usr/local/bin/";
+std::size_t Gnuplot::m_tmpfile_num       = 0;
+const std::size_t Gnuplot::m_tmpfile_max = 64;
 #endif
 
 Gnuplot::Gnuplot(bool _debug)
