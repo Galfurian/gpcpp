@@ -3,9 +3,9 @@
 /// (filled and open circles, squares) using Gnuplot.
 /// @copyright Copyright (c) 2025 Enrico Fraccaroli <enry.frak@gmail.com>
 
+#include <cmath>
 #include <iostream>
 #include <vector>
-#include <cmath>
 
 #include <gpcpp/gnuplot.hpp>
 

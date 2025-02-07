@@ -43,17 +43,19 @@ option(WARNINGS_AS_ERRORS "Treat all warnings as errors" OFF)
 
 find_package(Doxygen)
 
+find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+
 # -----------------------------------------------------------------------------
 # LIBRARY
 # -----------------------------------------------------------------------------
 
 # Add the C++ Library.
-add_library(gpcpp INTERFACE)
-add_library(gpcpp::gpcpp ALIAS gpcpp)
+add_library(${PROJECT_NAME} INTERFACE)
+add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 # Inlcude header directories.
-target_include_directories(gpcpp INTERFACE ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(${PROJECT_NAME} INTERFACE ${PROJECT_SOURCE_DIR}/include)
 # Set the library to use c++-20
-target_compile_features(gpcpp INTERFACE cxx_std_11)
+target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_11)
 
 # -----------------------------------------------------------------------------
 # COMPILATION FLAGS
@@ -62,40 +64,40 @@ target_compile_features(gpcpp INTERFACE cxx_std_11)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Disable warnings for MSVC-specific "safe" functions like strcpy_s, etc.,
     # which are not portable and may clutter warning logs.
-    target_compile_definitions(gpcpp INTERFACE _CRT_SECURE_NO_WARNINGS)
+    target_compile_definitions(${PROJECT_NAME} INTERFACE _CRT_SECURE_NO_WARNINGS)
 
     # Disable warning C4702: unreachable code.
     add_compile_options(/wd4702)
 
     if(WARNINGS_AS_ERRORS)
         # Treat all warnings as errors to enforce stricter code quality.
-        target_compile_options(gpcpp INTERFACE /WX)
+        target_compile_options(${PROJECT_NAME} INTERFACE /WX)
     endif()
 
     if(STRICT_WARNINGS)
         # Enable external header management to suppress warnings in system and
         # external headers, making it easier to focus on project-specific issues.
-        target_compile_options(gpcpp INTERFACE /experimental:external)
-        target_compile_options(gpcpp INTERFACE /external:I ${CMAKE_BINARY_DIR})
-        target_compile_options(gpcpp INTERFACE /external:anglebrackets)
-        target_compile_options(gpcpp INTERFACE /external:W0)
+        target_compile_options(${PROJECT_NAME} INTERFACE /experimental:external)
+        target_compile_options(${PROJECT_NAME} INTERFACE /external:I ${CMAKE_BINARY_DIR})
+        target_compile_options(${PROJECT_NAME} INTERFACE /external:anglebrackets)
+        target_compile_options(${PROJECT_NAME} INTERFACE /external:W0)
 
         # Use a high warning level to catch as many potential issues as possible.
-        target_compile_options(gpcpp INTERFACE /W4)
+        target_compile_options(${PROJECT_NAME} INTERFACE /W4)
 
         # Enforce standards-compliant behavior to avoid relying on MSVC-specific extensions.
-        target_compile_options(gpcpp INTERFACE /permissive-)
+        target_compile_options(${PROJECT_NAME} INTERFACE /permissive-)
     endif()
 
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if(WARNINGS_AS_ERRORS)
         # Treat all warnings as errors to enforce stricter code quality.
-        target_compile_options(gpcpp INTERFACE -Werror)
+        target_compile_options(${PROJECT_NAME} INTERFACE -Werror)
     endif()
 
     if(STRICT_WARNINGS)
         # Enable a broad set of warnings to catch common and subtle issues:
-        target_compile_options(gpcpp INTERFACE
+        target_compile_options(${PROJECT_NAME} INTERFACE
             -Wall                # Enable most general-purpose warnings.
             -Wextra              # Enable extra warnings not included in -Wall.
             -Wconversion         # Warn about implicit type conversions that may lose data.
@@ -117,54 +119,92 @@ endif()
 
 if(BUILD_EXAMPLES)
 
-    add_executable(gpcpp_example_line_plot examples/example_line_plot.cpp)
-    target_include_directories(gpcpp_example_line_plot PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
-    target_link_libraries(gpcpp_example_line_plot PUBLIC gpcpp)
+    add_executable(${PROJECT_NAME}_example_line_plot examples/example_line_plot.cpp)
+    target_include_directories(${PROJECT_NAME}_example_line_plot PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
+    target_link_libraries(${PROJECT_NAME}_example_line_plot PUBLIC ${PROJECT_NAME})
 
-    add_executable(gpcpp_example_scatter_plot examples/example_scatter_plot.cpp)
-    target_include_directories(gpcpp_example_scatter_plot PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
-    target_link_libraries(gpcpp_example_scatter_plot PUBLIC gpcpp)
+    add_executable(${PROJECT_NAME}_example_scatter_plot examples/example_scatter_plot.cpp)
+    target_include_directories(${PROJECT_NAME}_example_scatter_plot PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
+    target_link_libraries(${PROJECT_NAME}_example_scatter_plot PUBLIC ${PROJECT_NAME})
 
-    add_executable(gpcpp_example_line_plot_with_error_bars examples/example_line_plot_with_error_bars.cpp)
-    target_include_directories(gpcpp_example_line_plot_with_error_bars PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
-    target_link_libraries(gpcpp_example_line_plot_with_error_bars PUBLIC gpcpp)
+    add_executable(${PROJECT_NAME}_example_line_plot_with_error_bars examples/example_line_plot_with_error_bars.cpp)
+    target_include_directories(${PROJECT_NAME}_example_line_plot_with_error_bars PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
+    target_link_libraries(${PROJECT_NAME}_example_line_plot_with_error_bars PUBLIC ${PROJECT_NAME})
 
-    add_executable(gpcpp_example_3d_surface_plot examples/example_3d_surface_plot.cpp)
-    target_include_directories(gpcpp_example_3d_surface_plot PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
-    target_link_libraries(gpcpp_example_3d_surface_plot PUBLIC gpcpp)
+    add_executable(${PROJECT_NAME}_example_3d_surface_plot examples/example_3d_surface_plot.cpp)
+    target_include_directories(${PROJECT_NAME}_example_3d_surface_plot PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
+    target_link_libraries(${PROJECT_NAME}_example_3d_surface_plot PUBLIC ${PROJECT_NAME})
 
-    add_executable(gpcpp_example_contour_plot examples/example_contour_plot.cpp)
-    target_include_directories(gpcpp_example_contour_plot PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
-    target_link_libraries(gpcpp_example_contour_plot PUBLIC gpcpp)
+    add_executable(${PROJECT_NAME}_example_contour_plot examples/example_contour_plot.cpp)
+    target_include_directories(${PROJECT_NAME}_example_contour_plot PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
+    target_link_libraries(${PROJECT_NAME}_example_contour_plot PUBLIC ${PROJECT_NAME})
 
-    add_executable(gpcpp_example_custom_line_type_color examples/example_custom_line_type_color.cpp)
-    target_include_directories(gpcpp_example_custom_line_type_color PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
-    target_link_libraries(gpcpp_example_custom_line_type_color PUBLIC gpcpp)
+    add_executable(${PROJECT_NAME}_example_custom_line_type_color examples/example_custom_line_type_color.cpp)
+    target_include_directories(${PROJECT_NAME}_example_custom_line_type_color PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
+    target_link_libraries(${PROJECT_NAME}_example_custom_line_type_color PUBLIC ${PROJECT_NAME})
 
-    add_executable(gpcpp_example_logarithmic_scaling examples/example_logarithmic_scaling.cpp)
-    target_include_directories(gpcpp_example_logarithmic_scaling PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
-    target_link_libraries(gpcpp_example_logarithmic_scaling PUBLIC gpcpp)
+    add_executable(${PROJECT_NAME}_example_logarithmic_scaling examples/example_logarithmic_scaling.cpp)
+    target_include_directories(${PROJECT_NAME}_example_logarithmic_scaling PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
+    target_link_libraries(${PROJECT_NAME}_example_logarithmic_scaling PUBLIC ${PROJECT_NAME})
 
-    add_executable(gpcpp_example_multiple_plots_one_window examples/example_multiple_plots_one_window.cpp)
-    target_include_directories(gpcpp_example_multiple_plots_one_window PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
-    target_link_libraries(gpcpp_example_multiple_plots_one_window PUBLIC gpcpp)
+    add_executable(${PROJECT_NAME}_example_multiple_plots_one_window examples/example_multiple_plots_one_window.cpp)
+    target_include_directories(${PROJECT_NAME}_example_multiple_plots_one_window PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
+    target_link_libraries(${PROJECT_NAME}_example_multiple_plots_one_window PUBLIC ${PROJECT_NAME})
 
-    add_executable(gpcpp_example_multiple_styles examples/example_multiple_styles.cpp)
-    target_include_directories(gpcpp_example_multiple_styles PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
-    target_link_libraries(gpcpp_example_multiple_styles PUBLIC gpcpp)
+    add_executable(${PROJECT_NAME}_example_multiple_styles examples/example_multiple_styles.cpp)
+    target_include_directories(${PROJECT_NAME}_example_multiple_styles PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
+    target_link_libraries(${PROJECT_NAME}_example_multiple_styles PUBLIC ${PROJECT_NAME})
 
-    add_executable(gpcpp_example_save_plot_to_file examples/example_save_plot_to_file.cpp)
-    target_include_directories(gpcpp_example_save_plot_to_file PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
-    target_link_libraries(gpcpp_example_save_plot_to_file PUBLIC gpcpp)
+    add_executable(${PROJECT_NAME}_example_save_plot_to_file examples/example_save_plot_to_file.cpp)
+    target_include_directories(${PROJECT_NAME}_example_save_plot_to_file PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
+    target_link_libraries(${PROJECT_NAME}_example_save_plot_to_file PUBLIC ${PROJECT_NAME})
 
-    add_executable(gpcpp_example_custom_grid examples/example_custom_grid.cpp)
-    target_include_directories(gpcpp_example_custom_grid PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
-    target_link_libraries(gpcpp_example_custom_grid PUBLIC gpcpp)
+    add_executable(${PROJECT_NAME}_example_custom_grid examples/example_custom_grid.cpp)
+    target_include_directories(${PROJECT_NAME}_example_custom_grid PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
+    target_link_libraries(${PROJECT_NAME}_example_custom_grid PUBLIC ${PROJECT_NAME})
 
-    add_executable(gpcpp_example_labels examples/example_labels.cpp)
-    target_include_directories(gpcpp_example_labels PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
-    target_link_libraries(gpcpp_example_labels PUBLIC gpcpp)
+    add_executable(${PROJECT_NAME}_example_labels examples/example_labels.cpp)
+    target_include_directories(${PROJECT_NAME}_example_labels PUBLIC ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/include)
+    target_link_libraries(${PROJECT_NAME}_example_labels PUBLIC ${PROJECT_NAME})
 
+endif()
+
+# -----------------------------------------------------------------------------
+# CODE ANALYSIS
+# -----------------------------------------------------------------------------
+
+if(CLANG_TIDY_EXE)
+    file(GLOB_RECURSE PROJECT_HEADERS_AND_SOURCES
+        "${PROJECT_SOURCE_DIR}/include/**/*.hpp"
+        "${PROJECT_SOURCE_DIR}/include/**/*.hh"
+        "${PROJECT_SOURCE_DIR}/include/**/*.h"
+        "${PROJECT_SOURCE_DIR}/include/*.hpp"
+        "${PROJECT_SOURCE_DIR}/include/*.hh"
+        "${PROJECT_SOURCE_DIR}/include/*.h"
+        "${PROJECT_SOURCE_DIR}/src/**/*.cpp"
+        "${PROJECT_SOURCE_DIR}/src/**/*.cc"
+        "${PROJECT_SOURCE_DIR}/src/**/*.c"
+        "${PROJECT_SOURCE_DIR}/src/*.cpp"
+        "${PROJECT_SOURCE_DIR}/src/*.cc"
+        "${PROJECT_SOURCE_DIR}/src/*.c"
+    )
+    add_custom_target(
+        ${PROJECT_NAME}_clang_tidy
+        COMMAND ${CLANG_TIDY_EXE}
+        --p=${CMAKE_BINARY_DIR}
+        ${PROJECT_HEADERS_AND_SOURCES}
+        COMMENT "Running clang-tidy"
+        VERBATIM
+    )
+    add_custom_target(
+        ${PROJECT_NAME}_clang_tidy_fix
+        COMMAND ${CLANG_TIDY_EXE}
+        --fix --fix-errors
+        --p=${CMAKE_BINARY_DIR}
+        ${PROJECT_HEADERS_AND_SOURCES}
+        COMMENT "Running clang-tidy-fix"
+        VERBATIM
+    )
 endif()
 
 # -----------------------------------------------------------------------------
@@ -225,15 +265,27 @@ if(DOXYGEN_FOUND)
     # Exclude certain files or directories from documentation (if needed)
     set(DOXYGEN_EXCLUDE_PATTERNS "${PROJECT_SOURCE_DIR}/tests/*" "${PROJECT_SOURCE_DIR}/examples/*")
 
+    file(GLOB_RECURSE PROJECT_HEADERS_AND_SOURCES
+        "${PROJECT_SOURCE_DIR}/include/**/*.hpp"
+        "${PROJECT_SOURCE_DIR}/include/**/*.hh"
+        "${PROJECT_SOURCE_DIR}/include/**/*.h"
+        "${PROJECT_SOURCE_DIR}/include/*.hpp"
+        "${PROJECT_SOURCE_DIR}/include/*.hh"
+        "${PROJECT_SOURCE_DIR}/include/*.h"
+        "${PROJECT_SOURCE_DIR}/src/**/*.cpp"
+        "${PROJECT_SOURCE_DIR}/src/**/*.cc"
+        "${PROJECT_SOURCE_DIR}/src/**/*.c"
+        "${PROJECT_SOURCE_DIR}/src/*.cpp"
+        "${PROJECT_SOURCE_DIR}/src/*.cc"
+        "${PROJECT_SOURCE_DIR}/src/*.c"
+    )
+
     # Add Doxygen documentation target.
-    file(GLOB_RECURSE PROJECT_HEADERS "${PROJECT_SOURCE_DIR}/include/**/*.hpp")
-    file(GLOB_RECURSE PROJECT_SOURCES "${PROJECT_SOURCE_DIR}/src/**/*.cpp")
     doxygen_add_docs(
         gpcpp_documentation
         ${PROJECT_SOURCE_DIR}/README.md
         ${PROJECT_SOURCE_DIR}/LICENSE.md
-        ${PROJECT_HEADERS}
-        ${PROJECT_SOURCES}
+        ${PROJECT_HEADERS_AND_SOURCES}
         COMMENT "Generating Doxygen documentation for the library"
     )
 endif()

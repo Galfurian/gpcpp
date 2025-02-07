@@ -2,10 +2,10 @@
 /// @brief An example showing how to save the plot as an image or PDF file using a specified terminal type.
 /// @copyright Copyright (c) 2025 Enrico Fraccaroli <enry.frak@gmail.com>
 
-#include <iostream>
-#include <vector>
 #include <cmath>
 #include <gpcpp/gnuplot.hpp>
+#include <iostream>
+#include <vector>
 
 int main()
 {
@@ -27,7 +27,6 @@ int main()
         .set_output("output_plot.png")           // Set output file name
         .set_title("Saving Plot to File")        // Set plot title
         .plot_xy(x, y);                          // Plot the x, y pairs
-
 
     std::cout << "Plot saved to output_plot.png" << std::endl;
 

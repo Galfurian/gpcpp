@@ -2,9 +2,9 @@
 /// @brief An example demonstrating how to set logarithmic scaling on the x, y, or z axes.
 /// @copyright Copyright (c) 2025 Enrico Fraccaroli <enry.frak@gmail.com>
 
+#include <cmath>
 #include <iostream>
 #include <vector>
-#include <cmath>
 
 #include <gpcpp/gnuplot.hpp>
 

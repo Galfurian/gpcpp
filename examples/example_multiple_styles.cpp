@@ -2,10 +2,10 @@
 /// @brief An example showing how to combine multiple plotting styles (e.g., points, lines, filled curves) in a single plot.
 /// @copyright Copyright (c) 2025 Enrico Fraccaroli <enry.frak@gmail.com>
 
-#include <iostream>
-#include <vector>
 #include <cmath>
 #include <gpcpp/gnuplot.hpp>
+#include <iostream>
+#include <vector>
 
 int main()
 {

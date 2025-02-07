@@ -3,9 +3,9 @@
 /// (major and minor) using Gnuplot.
 /// @copyright Copyright (c) 2025 Enrico Fraccaroli <enry.frak@gmail.com>
 
+#include <cmath>
 #include <iostream>
 #include <vector>
-#include <cmath>
 
 #include <gpcpp/gnuplot.hpp>
 
@@ -40,9 +40,9 @@ int main()
         // Apply grid configuration.
         .apply_grid("xtics ytics mxtics mytics", "back")
         .set_plot_type(plot_type_t::lines) // Set the plot type to line.
-        .set_line_type(line_type_t::solid)   // Set the line type for data.
-        .set_line_color("green")             // Set the data line color to green.
-        .set_line_width(2.0);                // Set line width.
+        .set_line_type(line_type_t::solid) // Set the line type for data.
+        .set_line_color("green")           // Set the data line color to green.
+        .set_line_width(2.0);              // Set line width.
 
     // Plot the data as a line
     gnuplot.plot_xy(x, y, "y = sqrt(x)"); // Plot the x, y pairs with a label.

@@ -3,10 +3,10 @@
 /// along the y-axis using Gnuplot.
 /// @copyright Copyright (c) 2025 Enrico Fraccaroli <enry.frak@gmail.com>
 
-#include <iostream>
-#include <vector>
 #include <cmath>
 #include <gpcpp/gnuplot.hpp>
+#include <iostream>
+#include <vector>
 
 int main()
 {
@@ -30,12 +30,12 @@ int main()
         // Plot the line.
         .set_plot_type(plot_type_t::lines) // Set the plot type to line.
         .set_line_type(line_type_t::solid) // Set the line type.
-        .set_line_color("red")               // Set line color to blue
-        .set_line_width(2.0)                 // Set line width
-        .plot_xy(x, y, "Data")               // Plot with lines
+        .set_line_color("red")             // Set line color to blue
+        .set_line_width(2.0)               // Set line width
+        .plot_xy(x, y, "Data")             // Plot with lines
         // Then, plot the erro bar.
-        .set_line_color("blue")                                   // Set line color to blue
-        .set_line_width(2.0)                                      // Set line width
+        .set_line_color("blue")                                  // Set line color to blue
+        .set_line_width(2.0)                                     // Set line width
         .plot_xy_erorrbar(x, y, dy, erorrbar_type_t::yerrorbars) // Plot with error bars along y-axis
         .show();
 

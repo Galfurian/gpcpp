@@ -2,10 +2,10 @@
 /// @brief An example demonstrating how to apply contours to a 3D surface plot (contours on base, surface, or both).
 /// @copyright Copyright (c) 2025 Enrico Fraccaroli <enry.frak@gmail.com>
 
-#include <iostream>
-#include <vector>
 #include <cmath>
 #include <gpcpp/gnuplot.hpp>
+#include <iostream>
+#include <vector>
 
 int main()
 {

@@ -6,16 +6,16 @@
 
 #pragma once
 
-#include <unordered_set>
-#include <iostream>
-#include <string>
-#include <vector>
-#include <fstream>
-#include <sstream> // for std::ostringstream
-#include <stdexcept>
 #include <cstdio>
 #include <cstdlib> // for getenv()
+#include <fstream>
+#include <iostream>
 #include <list>    // for std::list
+#include <sstream> // for std::ostringstream
+#include <stdexcept>
+#include <string>
+#include <unordered_set>
+#include <vector>
 
 #define GPCPP_MAJOR_VERSION 1 ///< Major version of the library.
 #define GPCPP_MINOR_VERSION 0 ///< Minor version of the library.
@@ -33,16 +33,17 @@
 #error unsupported or unknown operating system
 #endif
 
+#include "gpcpp/box_style.hpp"
 #include "gpcpp/color.hpp"
 #include "gpcpp/defines.hpp"
 #include "gpcpp/id_manager.hpp"
-#include "gpcpp/box_style.hpp"
 
 namespace gpcpp
 {
 
 /// @brief Main Gnuplot class for managing plots.
-class Gnuplot {
+class Gnuplot
+{
 public:
     /// @brief Constructs a Gnuplot session.
     /// @param _debug enable debug mode (default is false).
@@ -163,11 +164,12 @@ public:
     /// @param width The line width for the grid.
     /// @param custom_dash The custom dash pattern (only used if style is `custom`).
     /// @return Gnuplot& Reference to the Gnuplot object.
-    Gnuplot &set_grid_line_type(grid_type_t grid_type,
-                                line_type_t style,
-                                const Color &color,
-                                double width,
-                                const std::string &custom_dash = "");
+    Gnuplot &set_grid_line_type(
+        grid_type_t grid_type,
+        line_type_t style,
+        const Color &color,
+        double width,
+        const std::string &custom_dash = "");
 
     /// @brief Builds and applies the grid configuration.
     /// @param tics A string specifying which tics to enable (e.g., "xtics ytics").
@@ -282,12 +284,13 @@ public:
     /// @param width The width of the legend box. Default is `2.0`.
     ///
     /// @return Gnuplot& Returns the Gnuplot object itself for method chaining.
-    Gnuplot &set_legend(const std::string &position = "default",
-                        const std::string &font     = "",
-                        const std::string &title    = "",
-                        bool with_box               = true,
-                        double spacing              = 1.0,
-                        double width                = 2.0);
+    Gnuplot &set_legend(
+        const std::string &position = "default",
+        const std::string &font     = "",
+        const std::string &title    = "",
+        bool with_box               = true,
+        double spacing              = 1.0,
+        double width                = 2.0);
 
     /// @brief Sets the title of the plot.
     /// @param title The title of the plot (default is an empty string).
@@ -422,17 +425,18 @@ public:
     /// @param point_type Optionally display a point at the label (optional).
     /// @param box_style The box style to apply to the label (optional).
     /// @return Reference to the Gnuplot object for chaining.
-    Gnuplot &add_label(double x,
-                       double y,
-                       const std::string &label,
-                       double font_size              = 12.0,
-                       const std::string &color      = "black",
-                       double offset_x               = 0.0,
-                       double offset_y               = 0.0,
-                       halign_t horizontal_alignment = halign_t::center,
-                       double rotation               = 0.0,
-                       bool point_type               = false,
-                       const box_style_t &box_style  = box_style_t());
+    Gnuplot &add_label(
+        double x,
+        double y,
+        const std::string &label,
+        double font_size              = 12.0,
+        const std::string &color      = "black",
+        double offset_x               = 0.0,
+        double offset_y               = 0.0,
+        halign_t horizontal_alignment = halign_t::center,
+        double rotation               = 0.0,
+        bool point_type               = false,
+        const box_style_t &box_style  = box_style_t());
 
     /// @brief Plots a single vector of data.
     /// @tparam X The type of the data in the vector.
@@ -471,11 +475,12 @@ public:
     /// @param title The title of the plot (default is an empty string).
     /// @return A reference to the current Gnuplot object.
     template <typename X, typename Y, typename E>
-    Gnuplot &plot_xy_erorrbar(const X &x,
-                              const Y &y,
-                              const E &dy,
-                              erorrbar_type_t style    = erorrbar_type_t::yerrorbars,
-                              const std::string &title = "");
+    Gnuplot &plot_xy_erorrbar(
+        const X &x,
+        const Y &y,
+        const E &dy,
+        erorrbar_type_t style    = erorrbar_type_t::yerrorbars,
+        const std::string &title = "");
 
     /// @brief Plots x, y, z triples of data.
     /// @tparam X The type of the x data.
@@ -523,10 +528,11 @@ public:
     /// @param iHeight The height of the image.
     /// @param title The title of the plot (default is an empty string).
     /// @return A reference to the current Gnuplot object.
-    Gnuplot &plot_image(const unsigned char *ucPicBuf,
-                        const unsigned int iWidth,
-                        const unsigned int iHeight,
-                        const std::string &title = "");
+    Gnuplot &plot_image(
+        const unsigned char *ucPicBuf,
+        const unsigned int iWidth,
+        const unsigned int iHeight,
+        const std::string &title = "");
 
     /// @brief Repeats the last plot or splot command.
     /// @details Useful for viewing the same plot with different settings or generating it for multiple devices (e.g., screen or file).

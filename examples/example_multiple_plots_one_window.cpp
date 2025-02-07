@@ -2,10 +2,10 @@
 /// @brief An example showing how to use `multiplot` mode to display multiple plots within the same window.
 /// @copyright Copyright (c) 2025 Enrico Fraccaroli <enry.frak@gmail.com>
 
-#include <iostream>
-#include <vector>
 #include <cmath>
 #include <gpcpp/gnuplot.hpp>
+#include <iostream>
+#include <vector>
 
 int main()
 {
@@ -33,7 +33,7 @@ int main()
     gnuplot.set_origin_and_size(0, 0, 1, 0.5); // Set origin and size for the second plot
     gnuplot.set_title("Plot 2: Points Plot")
         .set_point_type(point_type_t::filled_circle) // Set point type to filled circle
-        .set_line_width(0)                             // No line, only points
+        .set_line_width(0)                           // No line, only points
         .plot_xy(x, y);
 
     // End multiplot mode

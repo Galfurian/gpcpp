@@ -69,21 +69,35 @@ std::string Gnuplot::m_gnuplot_path     = "/usr/local/bin/";
 #endif
 
 Gnuplot::Gnuplot(bool _debug)
-    : debug(_debug),                       // Debug is disabled.
-      gnuplot_pipe(nullptr),               // No active pipe initially
-      terminal_type(terminal_type_t::wxt), // Default terminal type is wxt
-      valid(false),                        // Invalid session by default
-      two_dim(true),                       // 2D plotting by default
-      nplots(0),                           // No plots initially
-      line_width(1.0),                     // Default line width
-      plot_type(plot_type_t::lines),       // Default plot style is lines
-      smooth_type(smooth_type_t::none),    // No smoothing by default
-      line_type(""),                       // No custom line style
-      line_color(),                        // Default line color is unspecified
-      point_type(point_type_t::none),      // Default point style is none
-      point_size(-1.0),                    // Default point size is unspecified
-      grid_major_style_id(-1),             // Default is disabled.
-      grid_minor_style_id(-1)              // Default is disabled.
+    : debug(_debug)
+    , // Debug is disabled.
+    gnuplot_pipe(nullptr)
+    , // No active pipe initially
+    terminal_type(terminal_type_t::wxt)
+    , // Default terminal type is wxt
+    valid(false)
+    , // Invalid session by default
+    two_dim(true)
+    , // 2D plotting by default
+    nplots(0)
+    , // No plots initially
+    line_width(1.0)
+    , // Default line width
+    plot_type(plot_type_t::lines)
+    , // Default plot style is lines
+    smooth_type(smooth_type_t::none)
+    , // No smoothing by default
+    line_type("")
+    , // No custom line style
+    line_color()
+    , // Default line color is unspecified
+    point_type(point_type_t::none)
+    , // Default point style is none
+    point_size(-1.0)
+    , // Default point size is unspecified
+    grid_major_style_id(-1)
+    ,                       // Default is disabled.
+    grid_minor_style_id(-1) // Default is disabled.
 {
 #if (defined(unix) || defined(__unix) || defined(__unix__)) && !defined(__APPLE__)
     // Ensure DISPLAY is set for Unix systems.
@@ -322,17 +336,18 @@ Gnuplot &Gnuplot::plot_horizontal_range(double y, double x_min, double x_max)
     return *this;
 }
 
-Gnuplot &Gnuplot::add_label(double x,
-                            double y,
-                            const std::string &label,
-                            double font_size,
-                            const std::string &color,
-                            double offset_x,
-                            double offset_y,
-                            halign_t alignment,
-                            double rotation,
-                            bool _point_type,
-                            const box_style_t &box_style)
+Gnuplot &Gnuplot::add_label(
+    double x,
+    double y,
+    const std::string &label,
+    double font_size,
+    const std::string &color,
+    double offset_x,
+    double offset_y,
+    halign_t alignment,
+    double rotation,
+    bool _point_type,
+    const box_style_t &box_style)
 {
     // Construct the label command string
     std::ostringstream oss;
@@ -1159,10 +1174,11 @@ Gnuplot &Gnuplot::plot_equation3d(const std::string &equation, const std::string
     return *this;
 }
 
-Gnuplot &Gnuplot::plot_image(const unsigned char *ucPicBuf,
-                             const unsigned int iWidth,
-                             const unsigned int iHeight,
-                             const std::string &title)
+Gnuplot &Gnuplot::plot_image(
+    const unsigned char *ucPicBuf,
+    const unsigned int iWidth,
+    const unsigned int iHeight,
+    const std::string &title)
 {
     // Create a temporary file to store image data
     std::ofstream file;
@@ -1279,10 +1295,7 @@ Gnuplot &Gnuplot::replot()
     return *this;
 }
 
-bool Gnuplot::is_ready() const
-{
-    return valid && gnuplot_pipe;
-}
+bool Gnuplot::is_ready() const { return valid && gnuplot_pipe; }
 
 Gnuplot &Gnuplot::reset_plot()
 {
@@ -1370,12 +1383,13 @@ Gnuplot &Gnuplot::set_output(const std::string filename)
     return *this;
 }
 
-Gnuplot &Gnuplot::set_legend(const std::string &position,
-                             const std::string &font,
-                             const std::string &title,
-                             bool with_box,
-                             double spacing,
-                             double width)
+Gnuplot &Gnuplot::set_legend(
+    const std::string &position,
+    const std::string &font,
+    const std::string &title,
+    bool with_box,
+    double spacing,
+    double width)
 {
     if (position.empty()) {
         this->send_cmd("unset key");
@@ -1540,11 +1554,12 @@ Gnuplot &Gnuplot::set_ytics_minor(int minor_intervals)
     return *this;
 }
 
-Gnuplot &Gnuplot::set_grid_line_type(grid_type_t grid_type,
-                                     line_type_t style,
-                                     const Color &color,
-                                     double width,
-                                     const std::string &custom_dash)
+Gnuplot &Gnuplot::set_grid_line_type(
+    grid_type_t grid_type,
+    line_type_t style,
+    const Color &color,
+    double width,
+    const std::string &custom_dash)
 {
     if ((grid_type == grid_type_t::major) && (grid_major_style_id < 0)) {
         grid_major_style_id = id_manager_line_style.generate_unique_id();
@@ -2003,14 +2018,12 @@ void Gnuplot::remove_tmpfiles()
 
 bool is_line_type(plot_type_t style)
 {
-    return (style == plot_type_t::lines || style == plot_type_t::lines_points || style == plot_type_t::steps ||
-            style == plot_type_t::fsteps || style == plot_type_t::histeps || style == plot_type_t::filled_curves ||
-            style == plot_type_t::impulses);
+    return (
+        style == plot_type_t::lines || style == plot_type_t::lines_points || style == plot_type_t::steps ||
+        style == plot_type_t::fsteps || style == plot_type_t::histeps || style == plot_type_t::filled_curves ||
+        style == plot_type_t::impulses);
 }
 
-bool is_point_type(plot_type_t style)
-{
-    return (style == plot_type_t::points || style == plot_type_t::lines_points);
-}
+bool is_point_type(plot_type_t style) { return (style == plot_type_t::points || style == plot_type_t::lines_points); }
 
 } // namespace gpcpp

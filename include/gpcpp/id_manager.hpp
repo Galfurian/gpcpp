@@ -9,7 +9,8 @@ namespace gpcpp
 {
 
 /// @brief A class that manages unique IDs for different style types (e.g., textbox, line styles).
-class id_manager_t {
+class id_manager_t
+{
 private:
     // A set to track used IDs for a particular style
     std::unordered_set<int> used_ids;
@@ -30,10 +31,7 @@ public:
     /// @brief Checks if an ID has been used.
     /// @param id The ID to check.
     /// @return True if the ID is already used, false otherwise.
-    inline bool is_used(int id) const
-    {
-        return used_ids.find(id) != used_ids.end();
-    }
+    inline bool is_used(int id) const { return used_ids.find(id) != used_ids.end(); }
 
     /// @brief Adds an ID to the manager's tracking set.
     /// @param id The ID to be added.
@@ -48,10 +46,7 @@ public:
     }
 
     /// @brief Resets the used IDs.
-    inline void clear()
-    {
-        used_ids.clear();
-    }
+    inline void clear() { used_ids.clear(); }
 };
 
 } // namespace gpcpp

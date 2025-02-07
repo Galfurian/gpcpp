@@ -3,10 +3,10 @@
 
 #pragma once
 
-#include <string>
-#include <sstream>
 #include <iomanip>
+#include <sstream>
 #include <stdexcept>
+#include <string>
 
 namespace gpcpp
 {
@@ -15,7 +15,11 @@ namespace gpcpp
 struct Color {
     /// @brief Default constructor initializes as "unset" state.
     /// @details This constructor sets the RGB values to -1, indicating an unset state.
-    Color() : r(-1), g(-1), b(-1), a(255)
+    Color()
+        : r(-1)
+        , g(-1)
+        , b(-1)
+        , a(255)
     {
     }
 
@@ -25,7 +29,11 @@ struct Color {
     /// @param _b The blue component of the color (0-255).
     /// @param _a The alpha component (0 = transparent, 255 = opaque).
     /// @details This constructor sets the RGB values to the provided parameters, ensuring they are valid (0-255).
-    Color(int _r, int _g, int _b, int _a = 255) : r(-1), g(-1), b(-1), a(255)
+    Color(int _r, int _g, int _b, int _a = 255)
+        : r(-1)
+        , g(-1)
+        , b(-1)
+        , a(255)
     {
         set_from_rgba(_r, _g, _b, _a);
     }
@@ -33,7 +41,11 @@ struct Color {
     /// @brief Constructor from a string (hex format \#RRGGBB or color name).
     /// @param color_str A string representing the color, either in hex format (e.g., "\#ff0000") or as a predefined color name (e.g., "red").
     /// @details This constructor interprets the string as either a hex color code or a predefined color name and sets the RGB values accordingly.
-    Color(const std::string &color_str) : r(-1), g(-1), b(-1), a(255)
+    Color(const std::string &color_str)
+        : r(-1)
+        , g(-1)
+        , b(-1)
+        , a(255)
     {
         if (!color_str.empty()) {
             if (color_str[0] == '#') {
@@ -48,17 +60,11 @@ struct Color {
 
     /// @brief Resets the color to an unset state.
     /// @details This function sets all RGB values to -1, marking the color as unset.
-    void unset()
-    {
-        r = -1, g = -1, b = -1, a = 255;
-    }
+    void unset() { r = -1, g = -1, b = -1, a = 255; }
 
     /// @brief Checks if the color is set.
     /// @return Returns true if the color is set (i.e., RGB values are not -1), otherwise false.
-    bool is_set() const
-    {
-        return r != -1 && g != -1 && b != -1;
-    }
+    bool is_set() const { return r != -1 && g != -1 && b != -1; }
 
     /// @brief Sets the color components using RGB values.
     /// @param _r The red component of the color (0-255).
@@ -80,17 +86,19 @@ struct Color {
     /// @details This function extracts the RGB components from the provided hex code and sets the color.
     void set_from_hex(const std::string &hex)
     {
-        if (hex.size() == 7 && hex[0] == '#') {                           // #RRGGBB
-            this->set_from_rgba(std::stoi(hex.substr(1, 2), nullptr, 16), // Red
-                                std::stoi(hex.substr(3, 2), nullptr, 16), // Green
-                                std::stoi(hex.substr(5, 2), nullptr, 16), // Blue
-                                255                                       // Alpha (fully opaque by default)
+        if (hex.size() == 7 && hex[0] == '#') { // #RRGGBB
+            this->set_from_rgba(
+                std::stoi(hex.substr(1, 2), nullptr, 16), // Red
+                std::stoi(hex.substr(3, 2), nullptr, 16), // Green
+                std::stoi(hex.substr(5, 2), nullptr, 16), // Blue
+                255                                       // Alpha (fully opaque by default)
             );
-        } else if (hex.size() == 9 && hex[0] == '#') {                    // #AARRGGBB
-            this->set_from_rgba(std::stoi(hex.substr(3, 2), nullptr, 16), // Red
-                                std::stoi(hex.substr(5, 2), nullptr, 16), // Green
-                                std::stoi(hex.substr(7, 2), nullptr, 16), // Blue
-                                std::stoi(hex.substr(1, 2), nullptr, 16)  // Alpha
+        } else if (hex.size() == 9 && hex[0] == '#') { // #AARRGGBB
+            this->set_from_rgba(
+                std::stoi(hex.substr(3, 2), nullptr, 16), // Red
+                std::stoi(hex.substr(5, 2), nullptr, 16), // Green
+                std::stoi(hex.substr(7, 2), nullptr, 16), // Blue
+                std::stoi(hex.substr(1, 2), nullptr, 16)  // Alpha
             );
         }
     }

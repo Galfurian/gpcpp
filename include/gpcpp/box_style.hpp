@@ -28,16 +28,23 @@ struct box_style_t {
     /// @param _line_width The line width of the border.
     /// @param _x_margin The horizontal margin inside the box.
     /// @param _y_margin The vertical margin inside the box.
-    box_style_t(bool _show                       = false,
-                bool _opaque                     = false,
-                const std::string &_fill_color   = "white",
-                bool _border                     = false,
-                const std::string &_border_color = "black",
-                double _line_width               = 1.0,
-                double _x_margin                 = 0.0,
-                double _y_margin                 = 0.0)
-        : show(_show), opaque(_opaque), fill_color(_fill_color), border(_border), border_color(_border_color),
-          line_width(_line_width), x_margin(_x_margin), y_margin(_y_margin)
+    box_style_t(
+        bool _show                       = false,
+        bool _opaque                     = false,
+        const std::string &_fill_color   = "white",
+        bool _border                     = false,
+        const std::string &_border_color = "black",
+        double _line_width               = 1.0,
+        double _x_margin                 = 0.0,
+        double _y_margin                 = 0.0)
+        : show(_show)
+        , opaque(_opaque)
+        , fill_color(_fill_color)
+        , border(_border)
+        , border_color(_border_color)
+        , line_width(_line_width)
+        , x_margin(_x_margin)
+        , y_margin(_y_margin)
     {
         // Nothing to do.
     }
