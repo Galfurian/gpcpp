@@ -1,0 +1,8 @@
+title: GPCpp
+description: A C++ interface to the powerful plotting utility **Gnuplot**.
+author: Enrico Fraccaroli
+show_downloads: false
+google_analytics:
+theme: jekyll-theme-leap-day
+social:
+  email: enrico.fraccaroli@univr.it
