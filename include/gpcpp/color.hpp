@@ -64,7 +64,7 @@ struct Color {
 
     /// @brief Checks if the color is set.
     /// @return Returns true if the color is set (i.e., RGB values are not -1), otherwise false.
-    bool is_set() const { return r != -1 && g != -1 && b != -1; }
+    auto is_set() const -> bool { return r != -1 && g != -1 && b != -1; }
 
     /// @brief Sets the color components using RGB values.
     /// @param _r The red component of the color (0-255).
@@ -135,14 +135,14 @@ struct Color {
     /// @brief Returns the color as a hex string.
     /// @return A string representing the color in hex format (e.g., "#ff0000").
     /// @details If the color is unset, an empty string is returned.
-    std::string to_string() const
+    auto to_string() const -> std::string
     {
-        if (!is_set())
-            return ""; // Return empty string if color is unset
-
-        char buf[11];
-        snprintf(buf, sizeof(buf), "#%02X%02X%02X%02X", (255 - a), r, g, b);
-        return std::string(buf);
+        std::ostringstream oss;
+        if (is_set()) {
+            oss << "#" << std::uppercase << std::setfill('0') << std::setw(2) << std::hex << (255 - a) << std::setw(2)
+                << r << std::setw(2) << g << std::setw(2) << b;
+        }
+        return oss.str();
     }
 
 private:

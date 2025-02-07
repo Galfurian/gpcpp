@@ -18,7 +18,7 @@ private:
 public:
     /// @brief Generates a unique ID that hasn't been used before.
     /// @return A unique integer ID.
-    inline int generate_unique_id()
+    auto generate_unique_id() -> int
     {
         static int id = 1; // Initialize static ID counter.
         while (used_ids.find(id) != used_ids.end()) {
@@ -31,12 +31,12 @@ public:
     /// @brief Checks if an ID has been used.
     /// @param id The ID to check.
     /// @return True if the ID is already used, false otherwise.
-    inline bool is_used(int id) const { return used_ids.find(id) != used_ids.end(); }
+    auto is_used(int id) const -> bool { return used_ids.find(id) != used_ids.end(); }
 
     /// @brief Adds an ID to the manager's tracking set.
     /// @param id The ID to be added.
     /// @return True if added successfully, false if ID was already used.
-    inline bool add_id(int id)
+    auto add_id(int id) -> bool
     {
         if (is_used(id)) {
             return false; // ID already used.
@@ -46,7 +46,7 @@ public:
     }
 
     /// @brief Resets the used IDs.
-    inline void clear() { used_ids.clear(); }
+    void clear() { used_ids.clear(); }
 };
 
 } // namespace gpcpp

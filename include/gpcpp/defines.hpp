@@ -9,7 +9,7 @@ namespace gpcpp
 {
 
 /// @brief Enum representing the various plotting styles available in Gnuplot.
-enum class plot_type_t {
+enum class plot_type_t : unsigned char {
     none,          ///< Default fallback style (points).
     lines,         ///< Lines connecting the data points.
     points,        ///< Individual data points.
@@ -27,7 +27,7 @@ enum class plot_type_t {
 /// @brief Converts a plot_type_t value to its corresponding Gnuplot string representation.
 /// @param style The plotting style as a plot_type_t enum value.
 /// @return A string representing the corresponding Gnuplot style.
-static inline std::string plot_type_to_string(plot_type_t style)
+static inline auto plot_type_to_string(plot_type_t style) -> std::string
 {
     switch (style) {
     case plot_type_t::lines:
@@ -58,7 +58,7 @@ static inline std::string plot_type_to_string(plot_type_t style)
 }
 
 /// @brief The style of error bars.
-enum class erorrbar_type_t {
+enum class erorrbar_type_t : unsigned char {
     yerrorbars, ///< Error bars along the y-axis.
     xerrorbars, ///< Error bars along the x-axis.
 };
@@ -66,7 +66,7 @@ enum class erorrbar_type_t {
 /// @brief Converts an erorrbar_type_t value to a Gnuplot-compatible string.
 /// @param style The error bar style enumeration.
 /// @return Gnuplot-compatible string for the error bar style.
-static inline std::string errorbars_to_string(erorrbar_type_t style = erorrbar_type_t::yerrorbars)
+static inline auto errorbars_to_string(erorrbar_type_t style = erorrbar_type_t::yerrorbars) -> std::string
 {
     switch (style) {
     case erorrbar_type_t::yerrorbars:
@@ -79,7 +79,7 @@ static inline std::string errorbars_to_string(erorrbar_type_t style = erorrbar_t
 }
 
 /// @brief Enum representing the smoothing styles available in Gnuplot.
-enum class smooth_type_t {
+enum class smooth_type_t : unsigned char {
     none,      ///< No smoothing (default).
     unique,    ///< Unique smoothing.
     frequency, ///< Frequency-based smoothing.
@@ -92,7 +92,7 @@ enum class smooth_type_t {
 /// Converts a smooth_type value to its corresponding Gnuplot string.
 /// @param style The smoothing style to convert.
 /// @return A string representing the Gnuplot smoothing style.
-static inline std::string smooth_type_to_string(smooth_type_t style)
+static inline auto smooth_type_to_string(smooth_type_t style) -> std::string
 {
     switch (style) {
     case smooth_type_t::unique:
@@ -113,7 +113,7 @@ static inline std::string smooth_type_to_string(smooth_type_t style)
 }
 
 /// @brief Contour type options for Gnuplot
-enum class contour_type_t {
+enum class contour_type_t : unsigned char {
     none,    ///< Disables contouring
     base,    ///< Contours on the base (XY-plane)
     surface, ///< Contours on the surface
@@ -121,20 +121,20 @@ enum class contour_type_t {
 };
 
 /// @brief Contour parameter options for Gnuplot
-enum class contour_param_t {
+enum class contour_param_t : unsigned char {
     levels,    ///< Number of contour levels
     increment, ///< Contour increment settings
     discrete,  ///< Specific discrete contour levels
 };
 
 /// @brief Enumeration to represent different grid types in Gnuplot.
-enum class grid_type_t {
+enum class grid_type_t : unsigned char {
     major, ///< Major grid (default).
     minor, ///< Minor grid.
 };
 
 /// @brief Enumeration for Gnuplot line styles.
-enum class line_type_t {
+enum class line_type_t : unsigned char {
     none,         ///< No line style set.
     solid,        ///< Solid line (default)
     dashed,       ///< Dashed line
@@ -148,7 +148,7 @@ enum class line_type_t {
 /// @param style The line style enumeration.
 /// @param custom_pattern Optional custom dash pattern (e.g., "10,5,2,5").
 /// @return Gnuplot-compatible string for the line style.
-static inline std::string line_type_to_string(line_type_t style, const std::string &custom_pattern = "")
+static inline auto line_type_to_string(line_type_t style, const std::string &custom_pattern = "") -> std::string
 {
     switch (style) {
     case line_type_t::solid:
@@ -170,7 +170,7 @@ static inline std::string line_type_to_string(line_type_t style, const std::stri
 
 /// @brief Enum representing the various predefined point styles available in
 /// Gnuplot
-enum class point_type_t {
+enum class point_type_t : unsigned char {
     none,                     // No point (invisible).
     plus,                     // Plus (+) shape.
     cross,                    // Cross (×) shape.
@@ -190,13 +190,13 @@ enum class point_type_t {
 /// @brief Converts a point_type_t value to a Gnuplot-compatible string.
 /// @param style The point style enumeration.
 /// @return Gnuplot-compatible string for the point style.
-static inline std::string point_type_to_string(point_type_t style = point_type_t::none)
+static inline auto point_type_to_string(point_type_t style = point_type_t::none) -> std::string
 {
     return std::to_string(static_cast<int>(style));
 }
 
 /// @brief Enum representing the horizontal alignment options for labels in Gnuplot.
-enum class halign_t {
+enum class halign_t : unsigned char {
     left,   ///< Align label to the left of the (x, y) position.
     center, ///< Align label to the center of the (x, y) position.
     right   ///< Align label to the right of the (x, y) position.
@@ -206,7 +206,7 @@ enum class halign_t {
 /// @details This enum class represents all terminal types supported by gnuplot
 /// as per the provided list. Each terminal type corresponds to a specific
 /// plotting or output format.
-enum class terminal_type_t {
+enum class terminal_type_t : unsigned char {
     wxt,          ///< wxWidgets cross-platform interactive terminal
     cairolatex,   ///< LaTeX picture environment using graphicx package and Cairo backend
     canvas,       ///< HTML Canvas object
@@ -269,7 +269,7 @@ enum class terminal_type_t {
 /// custom options can be appended.
 /// @param terminal The terminal_type_t enum value.
 /// @return A string representing the gnuplot terminal type.
-static inline std::string terminal_type_to_string(terminal_type_t type)
+static inline auto terminal_type_to_string(terminal_type_t type) -> std::string
 {
     switch (type) {
     case terminal_type_t::cairolatex:
@@ -382,15 +382,5 @@ static inline std::string terminal_type_to_string(terminal_type_t type)
         return "wxt";
     }
 }
-
-/// @brief Checks if the specified style is a line style.
-/// @param style The plot style to check.
-/// @return true if the style is a line style, false otherwise.
-static bool is_line_type(plot_type_t style);
-
-/// @brief Checks if the specified style is a point style.
-/// @param style The plot style to check.
-/// @return true if the style is a point style, false otherwise.
-static bool is_point_type(plot_type_t style);
 
 } // namespace gpcpp
