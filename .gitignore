@@ -33,4 +33,6 @@
 
 # Others
 .vscode
+.venv
 build
+site
